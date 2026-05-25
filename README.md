@@ -28,16 +28,6 @@ AutoAdd allows you to combine Hooks, Bodies and CTAs dynamically, generating hun
 
 ---
 
-# Screenshots
-
-Add screenshots here:
-
-```md
-![Preview](screenshots/preview.png)
-```
-
----
-
 # Requirements
 
 * Python 3.14+
