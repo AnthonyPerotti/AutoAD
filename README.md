@@ -1,158 +1,80 @@
 # AutoAdd
 
-Sistema desktop para automação de variações de anúncios em vídeo utilizando FFmpeg.
+Modern desktop application for automated batch video generation using FFmpeg.
 
-O AutoAdd combina automaticamente:
-
-* Hooks
-* Corpos de vídeo
-* CTAs
-
-Gerando centenas ou milhares de combinações em lote de forma automática.
+AutoAdd allows you to combine Hooks, Bodies and CTAs dynamically, generating hundreds of video variations automatically through a modern desktop interface.
 
 ---
 
-# Preview
+# Features
 
-```text
-Hook + Corpo(s) + CTA
-```
+* Modern desktop UI
+* Automatic thumbnail previews
+* Dynamic body management
+* Batch video rendering
+* GPU encoder support
 
-Resultado:
-
-```text
-64
-256
-1024
-ou milhares de variações automaticamente
-```
-
----
-
-# Funcionalidades
-
-* Geração automática de combinações de vídeos
-* Suporte para múltiplos corpos de vídeo
-* Até 6 corpos simultâneos
-* Integração com FFmpeg
-* Interface desktop moderna
-* Sistema de logs
-* Barra de progresso
-* Botão STOP
-* Previsão automática de quantidade de vídeos
-* Confirmação para grandes lotes
-* Nome automático dos arquivos
-* Exportação em lote
-* Compatível com Windows
+  * NVIDIA NVENC
+  * AMD AMF
+  * Intel QSV
+  * CPU x264
+* Real-time progress tracking
+* Instant render stop
+* Scrollable responsive interface
+* FFmpeg integration
+* Multiple hooks, bodies and CTAs
+* Automatic combination calculation
+* Render logging system
 
 ---
 
-# Estrutura de funcionamento
+# Screenshots
 
-O sistema sempre respeita a ordem:
+Add screenshots here:
 
-```text
-HOOK → CORPOS → CTA
-```
-
-Exemplo:
-
-```text
-Hook_01.mp4
-↓
-Corpo_03.mp4
-↓
-CTA_02.mp4
+```md
+![Preview](screenshots/preview.png)
 ```
 
 ---
 
-# Como funciona
+# Requirements
 
-O AutoAdd utiliza:
-
-```python
-itertools.product()
-```
-
-Para gerar todas as combinações possíveis entre:
-
-* Hooks
-* Corpos
-* CTAs
-
-Exemplo:
-
-```text
-4 Hooks
-4 Corpos
-4 CTAs
-```
-
-Resultado:
-
-```text
-64 vídeos
-```
-
----
-
-# Interface
-
-Inspirado em ferramentas profissionais como:
-
-* Shutter Encoder
-* Adobe Media Encoder
-* HandBrake
-
----
-
-# Tecnologias utilizadas
-
-* Python
-* CustomTkinter
+* Python 3.14+
 * FFmpeg
-* PyInstaller
+* CustomTkinter
+* Pillow
 
 ---
 
-# Instalação
-
-## 1. Clone o projeto
+# Installation
 
 ```bash
-git clone https://github.com/SEU-USUARIO/AutoAdd.git
+git clone https://github.com/yourusername/AutoAdd.git
+cd AutoAdd
 ```
 
----
-
-## 2. Instale as dependências
+Create virtual environment:
 
 ```bash
-pip install customtkinter
-pip install pyinstaller
+python -m venv .venv
+```
+
+Activate environment:
+
+```bash
+.venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
 ```
 
 ---
 
-## 3. Adicione o FFmpeg
-
-Baixe o FFmpeg:
-
-[https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
-
-Estrutura necessária:
-
-```text
-ffmpeg/
-└── bin/
-    ├── ffmpeg.exe
-    └── ffprobe.exe
-```
-
----
-
-# Executar
+# Running
 
 ```bash
 python app.py
@@ -160,56 +82,70 @@ python app.py
 
 ---
 
-# Gerar executável
+# Build Executable
 
 ```bash
-pyinstaller --onedir --windowed --name AutoAdd --icon=icon.ico app.py
+pyinstaller --onedir --windowed --name AutoAdd --icon=icon.ico --add-data "ffmpeg.exe;." app.py
 ```
 
 ---
 
-# Executável final
+# AutoAdd v2.0
 
-O executável será criado em:
+Major update including:
+
+* Complete UI redesign
+* Thumbnail preview system
+* GPU encoder support
+* Instant stop rendering
+* Dynamic body system
+* Better FFmpeg integration
+* Scrollable modern interface
+* Improved render pipeline
+* Professional workflow improvements
+
+---
+
+# Project Structure
 
 ```text
-dist/AutoAdd/
+AutoAdd/
+├── app.py
+├── ui.py
+├── ffmpeg.exe
+├── icon.ico
+├── thumbs/
+├── dist/
+└── README.md
 ```
 
 ---
 
-# Importante
+# Supported Encoders
 
-A pasta `ffmpeg` deve estar junto do executável:
-
-```text
-dist/
-└── AutoAdd/
-    ├── AutoAdd.exe
-    └── ffmpeg/
-```
+| Encoder    | Hardware   |
+| ---------- | ---------- |
+| libx264    | CPU        |
+| h264_nvenc | NVIDIA GPU |
+| h264_amf   | AMD GPU    |
+| h264_qsv   | Intel GPU  |
 
 ---
 
-# Roadmap
+# Notes
 
-* Drag & Drop
-* Preview de vídeos
-* Miniaturas automáticas
-* GPU Encoding
-* Watermark automática
-* Templates de render
-* Randomização avançada
-* Presets de exportação
+* FFmpeg must be available in the project folder.
+* GPU encoding depends on compatible hardware/drivers.
+* `--onedir` builds are recommended for stability.
 
 ---
 
-# Autor
+# License
 
-Anthony Perotti
+MIT License
 
 ---
 
-# Licença
+# Author
 
-Projeto open-source para estudos e automação de workflows de edição de vídeo.
+Developed by Anthony Perotti
