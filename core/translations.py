@@ -1,68 +1,36 @@
 translations = {
-
     "Português": {
-
         "title": "AutoAD",
-
         "hooks": "🎣 HOOKS",
-
         "bodies": "🎬 CORPOS",
-
         "ctas": "📢 CTAs",
-
         "output": "📁 SAÍDA",
-
         "controls": "⚡ CONTROLES",
-
         "logs": "📜 LOGS",
-
         "generate": "GERAR VÍDEOS",
-
         "stop": "STOP",
-
         "select_folder": "Selecionar Pasta",
-
         "clear": "Limpar",
-
         "open_output": "Open Output Folder",
-
         "auto_open": "Open destination at end",
-
         "ready": "Sistema pronto",
-
-        "progress": "PROGRESSO"
+        "progress": "PROGRESSO",
     },
-
     "English": {
-
         "title": "AutoAD",
-
         "hooks": "🎣 HOOKS",
-
         "bodies": "🎬 BODIES",
-
         "ctas": "📢 CTAS",
-
         "output": "📁 OUTPUT",
-
         "controls": "⚡ CONTROLS",
-
         "logs": "📜 LOGS",
-
         "generate": "GENERATE VIDEOS",
-
         "stop": "STOP",
-
         "select_folder": "Select Folder",
-
         "clear": "Clear",
-
         "open_output": "Open Output Folder",
-
         "auto_open": "Open destination at end",
-
         "ready": "System ready",
-
-        "progress": "PROGRESS"
-    }
+        "progress": "PROGRESS",
+    },
 }
