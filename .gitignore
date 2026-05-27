@@ -1,37 +1,23 @@
-# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Virtual Environment
 venv/
 .env/
 
-# PyInstaller
 build/
 dist/
 *.spec
 
-# VSCode
 .vscode/
-
-# Temp files
 *.tmp
 temp_*.txt
-
-# Logs
 *.log
-
-# Windows
 Thumbs.db
 Desktop.ini
 
-# FFmpeg
 ffmpeg/
-
-# Outputs gerados
 outputs/
+thumbs/
 
-# Sistema
 .DS_Store

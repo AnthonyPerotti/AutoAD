@@ -3,7 +3,9 @@ import customtkinter as ctk
 import itertools
 import subprocess
 import threading
+import json
 
+from translations import translations
 from tkinter import messagebox
 from PIL import Image
 from logic import FFMPEG_PATH
@@ -14,17 +16,14 @@ ctk.set_default_color_theme("blue")
 
 
 class AutoAddApp(ctk.CTk):
-    
+
     # ============================================
     # LOG
     # ============================================
 
     def add_log(self, text):
 
-        self.log_box.insert(
-            "end",
-            f"{text}\n"
-        )
+        self.log_box.insert("end", f"{text}\n")
 
         self.log_box.see("end")
 
@@ -39,22 +38,16 @@ class AutoAddApp(ctk.CTk):
         for widget in self.hooks_preview.winfo_children():
             widget.destroy()
 
-        self.drop_label.place(
-            relx=0.5,
-            rely=0.5,
-            anchor="center"
-        )
+        self.drop_label.place(relx=0.5, rely=0.5, anchor="center")
 
         self.atualizar_total()
 
-        self.add_log(
-            "Hooks removidos."
-        )
+        self.add_log("Hooks removidos.")
 
     # ============================================
     # LIMPAR CORPOS
     # ============================================
-    
+
     def limpar_corpos(self):
 
         for card in self.corpos_widgets:
@@ -67,13 +60,11 @@ class AutoAddApp(ctk.CTk):
 
         self.atualizar_total()
 
-        self.add_log(
-            "Corpos removidos."
-        )
-            
+        self.add_log("Corpos removidos.")
+
     # ============================================
     # LIMPAR CTA
-    # ============================================    
+    # ============================================
 
     def limpar_cta(self):
 
@@ -83,17 +74,11 @@ class AutoAddApp(ctk.CTk):
 
             widget.destroy()
 
-        self.cta_label.place(
-            relx=0.5,
-            rely=0.5,
-            anchor="center"
-        )
+        self.cta_label.place(relx=0.5, rely=0.5, anchor="center")
 
         self.atualizar_total()
 
-        self.add_log(
-            "CTAs removidos."
-        )
+        self.add_log("CTAs removidos.")
 
     # ============================================
     # SELECIONAR HOOKS
@@ -108,138 +93,131 @@ class AutoAddApp(ctk.CTk):
 
         self.hooks_path = pasta
 
-        self.drop_label.configure(
-            text=os.path.basename(pasta)
-        )
+        self.drop_label.configure(text=os.path.basename(pasta))
 
-        self.add_log(
-            f"Hooks carregados: {pasta}"
-        )
-        
+        self.add_log(f"Hooks carregados: {pasta}")
+
         self.atualizar_total()
-        self.mostrar_hooks()
-    
+
+        self.drop_label.configure(text="Carregando previews...")
+
+        threading.Thread(target=self.mostrar_hooks, daemon=True).start()
+
     # ============================================
     # MOSTRAR HOOKS
     # ============================================
 
     def mostrar_hooks(self):
-        
+
+        self.after(0, self.limpar_hooks_preview)
+
+        videos = [f for f in os.listdir(self.hooks_path) if f.lower().endswith(".mp4")]
+
+        for index, video in enumerate(videos):
+
+            full_path = os.path.join(self.hooks_path, video)
+
+            thumb = self.gerar_thumbnail(full_path)
+
+            row = index // 3
+            col = index % 3
+
+            self.after(
+                0,
+                lambda v=video, t=thumb, r=row, c=col: self.criar_hook_card(v, t, r, c),
+            )
+
+        self.after(0, self.finalizar_hooks_preview)
+
+    def limpar_hooks_preview(self):
+
         self.drop_label.place_forget()
 
         for widget in self.hooks_preview.winfo_children():
 
             widget.destroy()
 
-        videos = [
-            f for f in os.listdir(self.hooks_path)
-            if f.lower().endswith(".mp4")
-        ]
+    def finalizar_hooks_preview(self):
 
-        for index, video in enumerate(videos):
+        self.add_log("Hooks carregados.")
 
-            full_path = os.path.join(
-                self.hooks_path,
-                video
-            )
+    def criar_hook_card(self, video, thumb, row, col):
 
-            thumb = self.gerar_thumbnail(
-                full_path
-            )
+        item = ctk.CTkFrame(
+            self.hooks_preview,
+            corner_radius=10,
+            fg_color="#111827",
+            width=180,
+            height=150,
+        )
 
-            item = ctk.CTkFrame(
-                self.hooks_preview,
-                corner_radius=10,
-                fg_color="#111827",
-                width=180,
-                height=150
-            )
+        item.grid(row=row, column=col, padx=8, pady=8, sticky="n")
 
-            row = index // 3
-            col = index % 3
+        item.grid_propagate(False)
 
-            item.grid(
-                row=row,
-                column=col,
-                padx=8,
-                pady=8,
-                sticky="n"
-            )
-            
-            item.grid_propagate(False)
+        if thumb and os.path.exists(thumb):
 
-            if thumb and os.path.exists(thumb):
+            try:
 
                 image = Image.open(thumb)
 
-                img = ctk.CTkImage(
-                    light_image=image,
-                    dark_image=image,
-                    size=(160, 90)
-                )
+                img = ctk.CTkImage(light_image=image, dark_image=image, size=(160, 90))
 
-                img_label = ctk.CTkLabel(
-                    item,
-                    image=img,
-                    text=""
-                )
+                img_label = ctk.CTkLabel(item, image=img, text="")
 
                 img_label.image = img
 
-                img_label.pack(
-                    pady=(10, 5)
-                )
+                img_label.pack(pady=(10, 5))
 
-            text = ctk.CTkLabel(
-                item,
-                text=video,
-                font=("Segoe UI", 13)
-            )
+            except:
 
-            text.pack(
-                padx=8,
-                pady=(0, 8)
-            )
-    
+                pass
+
+        text = ctk.CTkLabel(item, text=video, font=("Segoe UI", 13))
+
+        text.pack(padx=8, pady=(0, 8))
+
     # ============================================
     # GERAR THUMB
     # ============================================
-    
+
     def gerar_thumbnail(self, video_path):
         try:
-            os.makedirs(
-                "thumbs",
-                exist_ok=True
-            )
-            nome = os.path.splitext(
-                os.path.basename(video_path)
-            )[0]
-            thumb_path = os.path.join(
-                "thumbs",
-                f"{nome}.jpg"
-            )
+            os.makedirs("thumbs", exist_ok=True)
+            nome = os.path.splitext(os.path.basename(video_path))[0]
+            thumb_path = os.path.join("thumbs", f"{nome}.jpg")
             if os.path.exists(thumb_path):
                 return thumb_path
             cmd = [
                 FFMPEG_PATH,
                 "-y",
                 "-ss",
-                "00:00:01",
+                "00:00:05",
                 "-i",
                 video_path,
+                "-vf",
+                "scale=320:-1",
                 "-vframes",
                 "1",
-                thumb_path
+                thumb_path,
             ]
+
+            startupinfo = subprocess.STARTUPINFO()
+
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
             result = subprocess.run(
                 cmd,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
+                startupinfo=startupinfo,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
+
             return thumb_path
         except:
             return None
-    
+
     # ============================================
     # ADICIONAR CORPO
     # ============================================
@@ -248,43 +226,25 @@ class AutoAddApp(ctk.CTk):
 
         if len(self.corpos_widgets) >= 6:
 
-            self.add_log(
-                "Limite máximo de corpos atingido."
-            )
+            self.add_log("Limite máximo de corpos atingido.")
 
             return
 
         index = len(self.corpos_widgets) + 1
 
-        card = ctk.CTkFrame(
-            self.corpos_area,
-            corner_radius=12,
-            fg_color="#241737"
-        )
+        card = ctk.CTkFrame(self.corpos_area, corner_radius=12, fg_color="#241737")
 
-        card.pack(
-            fill="x",
-            pady=8,
-            padx=5
-        )
-        
+        card.pack(fill="x", pady=8, padx=5)
+
         card.path = ""
 
         # ============================================
         # LABEL
         # ============================================
 
-        label = ctk.CTkLabel(
-            card,
-            text=f"Corpo {index}",
-            font=("Segoe UI", 14, "bold")
-        )
+        label = ctk.CTkLabel(card, text=f"Corpo {index}", font=("Segoe UI", 14, "bold"))
 
-        label.pack(
-            side="left",
-            padx=15,
-            pady=12
-        )
+        label.pack(side="left", padx=15, pady=12)
 
         # ============================================
         # BOTÃO SELECIONAR
@@ -296,18 +256,10 @@ class AutoAddApp(ctk.CTk):
             width=160,
             height=32,
             corner_radius=10,
-            command=lambda c=card: self.selecionar_corpo(
-                c,
-                path_label,
-                preview
-            )
+            command=lambda c=card: self.selecionar_corpo(c, path_label, preview),
         )
 
-        btn_select.pack(
-            side="right",
-            padx=10,
-            pady=10
-        )
+        btn_select.pack(side="right", padx=10, pady=10)
 
         # ============================================
         # BOTÃO REMOVER
@@ -321,44 +273,27 @@ class AutoAddApp(ctk.CTk):
             corner_radius=10,
             fg_color="#991b1b",
             hover_color="#dc2626",
-            command=lambda: self.remover_corpo(card)
+            command=lambda: self.remover_corpo(card),
         )
 
-        btn_remove.pack(
-            side="right",
-            padx=(0, 5)
-        )
+        btn_remove.pack(side="right", padx=(0, 5))
 
         # ============================================
         # PATH
         # ============================================
 
         path_label = ctk.CTkLabel(
-            card,
-            text="Nenhuma pasta selecionada",
-            text_color="#9ca3af"
+            card, text="Nenhuma pasta selecionada", text_color="#9ca3af"
         )
 
-        path_label.pack(
-            anchor="w",
-            padx=15,
-            pady=(0, 10)
-        )
-        
-        preview = ctk.CTkScrollableFrame(
-            card,
-            height=180,
-            fg_color="#1a1325"
-        )
+        path_label.pack(anchor="w", padx=15, pady=(0, 10))
 
-        preview.pack(
-            fill="x",
-            padx=10,
-            pady=(0, 10)
-        )
+        preview = ctk.CTkScrollableFrame(card, height=180, fg_color="#1a1325")
+
+        preview.pack(fill="x", padx=10, pady=(0, 10))
 
         self.corpos_widgets.append(card)
-    
+
     # ============================================
     # REINDEXAR CORPOS
     # ============================================
@@ -377,10 +312,8 @@ class AutoAddApp(ctk.CTk):
 
                     if texto.startswith("Corpo"):
 
-                        widget.configure(
-                            text=f"Corpo {i+1}"
-                        )
-        
+                        widget.configure(text=f"Corpo {i+1}")
+
     # ============================================
     # REMOVER CORPO
     # ============================================
@@ -398,10 +331,8 @@ class AutoAddApp(ctk.CTk):
 
         self.atualizar_total()
 
-        self.add_log(
-            "Corpo removido."
-        )
-    
+        self.add_log("Corpo removido.")
+
     # ============================================
     # SELECIONAR CORPO
     # ============================================
@@ -415,21 +346,14 @@ class AutoAddApp(ctk.CTk):
 
         card.path = pasta
 
-        label.configure(
-            text=os.path.basename(pasta)
-        )
+        label.configure(text=os.path.basename(pasta))
 
-        self.add_log(
-            f"Corpo carregado: {pasta}"
-        )
+        self.add_log(f"Corpo carregado: {pasta}")
 
-        self.mostrar_preview_corpo(
-            pasta,
-            preview
-        )
+        self.mostrar_preview_corpo(pasta, preview)
 
         self.atualizar_total()
-    
+
     # ============================================
     # MOSTRAR PREVIEW CORPO
     # ============================================
@@ -440,78 +364,43 @@ class AutoAddApp(ctk.CTk):
 
             widget.destroy()
 
-        videos = [
-            f for f in os.listdir(pasta)
-            if f.lower().endswith(".mp4")
-        ]
+        videos = [f for f in os.listdir(pasta) if f.lower().endswith(".mp4")]
 
         for index, video in enumerate(videos):
 
-            full_path = os.path.join(
-                pasta,
-                video
-            )
+            full_path = os.path.join(pasta, video)
 
-            thumb = self.gerar_thumbnail(
-                full_path
-            )
+            thumb = self.gerar_thumbnail(full_path)
 
             item = ctk.CTkFrame(
-                preview,
-                corner_radius=10,
-                fg_color="#241737",
-                width=180,
-                height=150
+                preview, corner_radius=10, fg_color="#241737", width=180, height=150
             )
 
             row = index // 3
             col = index % 3
 
-            item.grid(
-                row=row,
-                column=col,
-                padx=8,
-                pady=8,
-                sticky="n"
-            )
-            
+            item.grid(row=row, column=col, padx=8, pady=8, sticky="n")
+
             item.grid_propagate(False)
 
             if thumb and os.path.exists(thumb):
 
                 image = Image.open(thumb)
 
-                img = ctk.CTkImage(
-                    light_image=image,
-                    dark_image=image,
-                    size=(160, 90)
-                )
+                img = ctk.CTkImage(light_image=image, dark_image=image, size=(160, 90))
 
-                img_label = ctk.CTkLabel(
-                    item,
-                    image=img,
-                    text=""
-                )
+                img_label = ctk.CTkLabel(item, image=img, text="")
 
                 img_label.image = img
 
-                img_label.pack(
-                    padx=5,
-                    pady=5
-                )
+                img_label.pack(padx=5, pady=5)
 
             label = ctk.CTkLabel(
-                item,
-                text=video,
-                wraplength=120,
-                font=("Segoe UI", 11)
+                item, text=video, wraplength=120, font=("Segoe UI", 11)
             )
 
-            label.pack(
-                padx=5,
-                pady=(0, 5)
-            )
-        
+            label.pack(padx=5, pady=(0, 5))
+
     # ============================================
     # SELECIONAR CTA
     # ============================================
@@ -525,99 +414,64 @@ class AutoAddApp(ctk.CTk):
 
         self.cta_path = pasta
 
-        self.cta_label.configure(
-            text=os.path.basename(pasta)
-        )
+        self.cta_label.configure(text=os.path.basename(pasta))
 
-        self.add_log(
-            f"CTA carregado: {pasta}"
-        )
-        
+        self.add_log(f"CTA carregado: {pasta}")
+
         self.atualizar_total()
         self.mostrar_ctas()
-        
+
     # ============================================
     # MOSTRAR CTAs
     # ============================================
 
     def mostrar_ctas(self):
-        
+
         self.cta_label.place_forget()
 
         for widget in self.cta_preview.winfo_children():
 
             widget.destroy()
 
-        videos = [
-            f for f in os.listdir(self.cta_path)
-            if f.lower().endswith(".mp4")
-        ]
+        videos = [f for f in os.listdir(self.cta_path) if f.lower().endswith(".mp4")]
 
         for index, video in enumerate(videos):
 
-            full_path = os.path.join(
-                self.cta_path,
-                video
-            )
+            full_path = os.path.join(self.cta_path, video)
 
-            thumb = self.gerar_thumbnail(
-                full_path
-            )
+            thumb = self.gerar_thumbnail(full_path)
 
             item = ctk.CTkFrame(
                 self.cta_preview,
                 corner_radius=10,
                 fg_color="#102016",
                 width=180,
-                height=150
+                height=150,
             )
 
             row = index // 3
             col = index % 3
 
-            item.grid(
-                row=row,
-                column=col,
-                padx=8,
-                pady=8,
-                sticky="n"
-            )
-            
+            item.grid(row=row, column=col, padx=8, pady=8, sticky="n")
+
             item.grid_propagate(False)
 
             if thumb and os.path.exists(thumb):
 
                 image = Image.open(thumb)
 
-                img = ctk.CTkImage(
-                    light_image=image,
-                    dark_image=image,
-                    size=(160, 90)
-                )
+                img = ctk.CTkImage(light_image=image, dark_image=image, size=(160, 90))
 
-                img_label = ctk.CTkLabel(
-                    item,
-                    image=img,
-                    text=""
-                )
+                img_label = ctk.CTkLabel(item, image=img, text="")
 
                 img_label.image = img
 
-                img_label.pack(
-                    pady=(10, 5)
-                )
+                img_label.pack(pady=(10, 5))
 
-            text = ctk.CTkLabel(
-                item,
-                text=video,
-                font=("Segoe UI", 13)
-            )
+            text = ctk.CTkLabel(item, text=video, font=("Segoe UI", 13))
 
-            text.pack(
-                padx=8,
-                pady=(0, 8)
-            )
-    
+            text.pack(padx=8, pady=(0, 8))
+
     # ============================================
     # SELECIONAR OUTPUT
     # ============================================
@@ -631,26 +485,20 @@ class AutoAddApp(ctk.CTk):
 
         self.output_path = pasta
 
-        self.output_label.configure(
-            text=pasta
-        )
+        self.output_label.configure(text=pasta)
 
-        self.add_log(
-            f"Saída definida: {pasta}"
-        )
-        
-        self.atualizar_total()    
-    
+        self.add_log(f"Saída definida: {pasta}")
+
+        self.atualizar_total()
+
     # ============================================
     # TOTAL PREVISTO
     # ============================================
 
     def atualizar_total(self):
 
-        self.total_label.configure(
-            text="Total previsto: 0 vídeos"
-        )
-        
+        self.total_label.configure(text="Total previsto: 0 vídeos")
+
         try:
 
             if not self.hooks_path:
@@ -661,10 +509,9 @@ class AutoAddApp(ctk.CTk):
 
             total = 1
 
-            hooks = len([
-                f for f in os.listdir(self.hooks_path)
-                if f.lower().endswith(".mp4")
-            ])
+            hooks = len(
+                [f for f in os.listdir(self.hooks_path) if f.lower().endswith(".mp4")]
+            )
 
             total *= hooks
 
@@ -675,59 +522,44 @@ class AutoAddApp(ctk.CTk):
                 if not pasta:
                     return
 
-                qtd = len([
-                    f for f in os.listdir(pasta)
-                    if f.lower().endswith(".mp4")
-                ])
+                qtd = len([f for f in os.listdir(pasta) if f.lower().endswith(".mp4")])
 
                 total *= qtd
 
-            ctas = len([
-                f for f in os.listdir(self.cta_path)
-                if f.lower().endswith(".mp4")
-            ])
+            ctas = len(
+                [f for f in os.listdir(self.cta_path) if f.lower().endswith(".mp4")]
+            )
 
             total *= ctas
 
-            self.total_label.configure(
-                text=f"Total previsto: {total} vídeos"
-            )
+            self.total_label.configure(text=f"Total previsto: {total} vídeos")
 
         except:
 
             pass
-    
+
     # ============================================
     # INICIAR GERAÇÃO
     # ============================================
 
     def iniciar_geracao(self):
-        
-        self.status_label.configure(
-            text="Gerando vídeos...",
-            text_color="#f59e0b"
-        )
-        
+
+        self.status_label.configure(text="Gerando vídeos...", text_color="#f59e0b")
+
         if self.renderizando:
             return
 
         self.renderizando = True
-        
+
         self.progressbar.set(0)
 
-        self.progress_label.configure(
-            text="0 / 0"
-        )
-        
+        self.progress_label.configure(text="0 / 0")
+
         total_text = self.total_label.cget("text")
 
         try:
 
-            total = int(
-                total_text.split(":")[1]
-                .replace("vídeos", "")
-                .strip()
-            )
+            total = int(total_text.split(":")[1].replace("vídeos", "").strip())
 
         except:
 
@@ -736,23 +568,19 @@ class AutoAddApp(ctk.CTk):
         if total > 100:
 
             continuar = messagebox.askyesno(
-                "Confirmação",
-                f"Serão gerados {total} vídeos.\n\nDeseja continuar?"
+                "Confirmação", f"Serão gerados {total} vídeos.\n\nDeseja continuar?"
             )
 
             if not continuar:
 
                 self.renderizando = False
-                
+
                 return
-        
-        thread = threading.Thread(
-            target=self.gerar_videos,
-            daemon=True
-        )
+
+        thread = threading.Thread(target=self.gerar_videos, daemon=True)
 
         thread.start()
-    
+
     # ============================================
     # GERAR VÍDEOS
     # ============================================
@@ -767,9 +595,7 @@ class AutoAddApp(ctk.CTk):
 
         if not self.hooks_path:
 
-            self.add_log(
-                "Selecione os hooks."
-            )
+            self.add_log("Selecione os hooks.")
 
             self.renderizando = False
 
@@ -777,9 +603,7 @@ class AutoAddApp(ctk.CTk):
 
         if not self.cta_path:
 
-            self.add_log(
-                "Selecione os CTAs."
-            )
+            self.add_log("Selecione os CTAs.")
 
             self.renderizando = False
 
@@ -787,9 +611,7 @@ class AutoAddApp(ctk.CTk):
 
         if not self.output_path:
 
-            self.add_log(
-                "Selecione a saída."
-            )
+            self.add_log("Selecione a saída.")
 
             self.renderizando = False
 
@@ -799,15 +621,9 @@ class AutoAddApp(ctk.CTk):
         # LISTAS
         # ============================================
 
-        hooks = [
-            f for f in os.listdir(self.hooks_path)
-            if f.lower().endswith(".mp4")
-        ]
+        hooks = [f for f in os.listdir(self.hooks_path) if f.lower().endswith(".mp4")]
 
-        ctas = [
-            f for f in os.listdir(self.cta_path)
-            if f.lower().endswith(".mp4")
-        ]
+        ctas = [f for f in os.listdir(self.cta_path) if f.lower().endswith(".mp4")]
 
         corpos_listas = []
 
@@ -817,9 +633,7 @@ class AutoAddApp(ctk.CTk):
 
             if not pasta:
 
-                self.add_log(
-                    "Selecione todas as pastas de corpos."
-                )
+                self.add_log("Selecione todas as pastas de corpos.")
 
                 self.renderizando = False
 
@@ -827,22 +641,15 @@ class AutoAddApp(ctk.CTk):
 
             if not os.path.exists(pasta):
 
-                self.add_log(
-                    f"Pasta inexistente: {pasta}"
-                )
+                self.add_log(f"Pasta inexistente: {pasta}")
 
                 self.renderizando = False
 
                 return
 
-            videos = [
-                f for f in os.listdir(pasta)
-                if f.lower().endswith(".mp4")
-            ]
+            videos = [f for f in os.listdir(pasta) if f.lower().endswith(".mp4")]
 
-            corpos_listas.append(
-                (pasta, videos)
-            )
+            corpos_listas.append((pasta, videos))
 
         # ============================================
         # COMBINAÇÕES
@@ -858,24 +665,17 @@ class AutoAddApp(ctk.CTk):
 
                 for pasta, videos in corpos_listas:
 
-                    corpos_videos.append([
-                        os.path.join(pasta, v)
-                        for v in videos
-                    ])
+                    corpos_videos.append([os.path.join(pasta, v) for v in videos])
 
                 for combinacao in itertools.product(*corpos_videos):
 
                     lista = []
 
-                    lista.append(
-                        os.path.join(self.hooks_path, hook)
-                    )
+                    lista.append(os.path.join(self.hooks_path, hook))
 
                     lista.extend(combinacao)
 
-                    lista.append(
-                        os.path.join(self.cta_path, cta)
-                    )
+                    lista.append(os.path.join(self.cta_path, cta))
 
                     lista_final.append(lista)
 
@@ -884,10 +684,8 @@ class AutoAddApp(ctk.CTk):
         # ============================================
 
         total = len(lista_final)
-        
-        self.add_log(
-            f"{total} vídeos serão gerados."
-        )
+
+        self.add_log(f"{total} vídeos serão gerados.")
 
         # ============================================
         # LOOP
@@ -896,26 +694,16 @@ class AutoAddApp(ctk.CTk):
         for index, videos in enumerate(lista_final):
 
             if self.stop_requested:
-                
-                self.status_label.configure(
-                    text="Interrompido",
-                    text_color="#ef4444"
-                )
-                
-                self.add_log(
-                    "Geração interrompida."
-                )
+
+                self.status_label.configure(text="Interrompido", text_color="#ef4444")
+
+                self.add_log("Geração interrompida.")
 
                 break
 
-            self.add_log(
-                f"Gerando {index+1}/{total}"
-            )
+            self.add_log(f"Gerando {index+1}/{total}")
 
-            temp_txt = os.path.join(
-                os.getcwd(),
-                f"temp_{index}.txt"
-            )
+            temp_txt = os.path.join(os.getcwd(), f"temp_{index}.txt")
 
             with open(temp_txt, "w", encoding="utf-8") as f:
 
@@ -925,38 +713,23 @@ class AutoAddApp(ctk.CTk):
 
                     f.write(f"file '{video}'\n")
 
-            hook_nome = os.path.splitext(
-                os.path.basename(videos[0])
-            )[0]
+            hook_nome = os.path.splitext(os.path.basename(videos[0]))[0]
 
-            cta_nome = os.path.splitext(
-                os.path.basename(videos[-1])
-            )[0]
+            cta_nome = os.path.splitext(os.path.basename(videos[-1]))[0]
 
             corpos_nome = []
 
             for corpo in videos[1:-1]:
 
-                corpos_nome.append(
-                    os.path.splitext(
-                        os.path.basename(corpo)
-                    )[0]
-                )
+                corpos_nome.append(os.path.splitext(os.path.basename(corpo))[0])
 
             nome_corpos = "_".join(corpos_nome)
 
-            nome_final = (
-                f"{hook_nome}"
-                f"_{nome_corpos}"
-                f"_{cta_nome}.mp4"
-            )
+            nome_final = f"{hook_nome}" f"_{nome_corpos}" f"_{cta_nome}.mp4"
 
             nome_final = nome_final[:180]
-            
-            output_file = os.path.join(
-                self.output_path,
-                nome_final
-            )
+
+            output_file = os.path.join(self.output_path, nome_final)
 
             cmd = [
                 FFMPEG_PATH,
@@ -967,38 +740,38 @@ class AutoAddApp(ctk.CTk):
                 "0",
                 "-i",
                 temp_txt,
-
                 "-c:v",
                 self.get_encoder(),
-
                 "-c:a",
                 "aac",
-
                 "-preset",
                 "fast",
-
-                output_file
+                output_file,
             ]
-            
+
+            startupinfo = subprocess.STARTUPINFO()
+
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
             self.current_process = subprocess.Popen(
                 cmd,
-                stdout=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
+                startupinfo=startupinfo,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
 
             stdout, stderr = self.current_process.communicate()
 
             returncode = self.current_process.returncode
-            
+
             self.current_process = None
-            
+
             if returncode != 0 and not self.stop_requested:
 
-                self.add_log(
-                    f"ERRO FFmpeg:\n{stderr}"
-                )
-                
+                self.add_log(f"ERRO FFmpeg:\n{stderr}")
+
                 self.current_process = None
 
             if os.path.exists(temp_txt):
@@ -1009,36 +782,28 @@ class AutoAddApp(ctk.CTk):
 
             self.progressbar.set(progresso)
 
-            self.progress_label.configure(
-                text=f"{index+1} / {total}"
-            )
+            self.progress_label.configure(text=f"{index+1} / {total}")
 
             self.after(0, lambda: None)
 
         if self.stop_requested:
 
-            self.add_log(
-                "Render interrompido."
-            )
+            self.add_log("Render interrompido.")
 
-            self.status_label.configure(
-                text="Interrompido",
-                text_color="#ef4444"
-            )
+            self.status_label.configure(text="Interrompido", text_color="#ef4444")
 
         else:
 
-            self.add_log(
-                "Finalizado."
-            )
+            self.add_log("Finalizado.")
 
-            self.status_label.configure(
-                text="Finalizado",
-                text_color="#22c55e"
-            )
-        
+            self.status_label.configure(text="Finalizado", text_color="#22c55e")
+
         self.renderizando = False
-    
+
+        if self.auto_open_var.get():
+
+            os.startfile(self.output_path)
+
     # ============================================
     # GET ENCODER
     # ============================================
@@ -1060,7 +825,7 @@ class AutoAddApp(ctk.CTk):
             return "h264_qsv"
 
         return "libx264"
-    
+
     # ============================================
     # STOP
     # ============================================
@@ -1075,21 +840,167 @@ class AutoAddApp(ctk.CTk):
 
                 self.current_process.kill()
 
-                self.add_log(
-                    "FFmpeg interrompido."
-                )
+                self.add_log("FFmpeg interrompido.")
 
             except:
 
                 pass
-    
+
+    def abrir_configuracoes(self):
+
+        config_window = ctk.CTkToplevel(self)
+
+        config_window.title("Settings")
+
+        config_window.geometry("420x420")
+
+        config_window.resizable(False, False)
+
+        config_window.grab_set()
+
+        # ============================================
+        # TITLE
+        # ============================================
+
+        title = ctk.CTkLabel(
+            config_window, text="⚙ Settings", font=("Segoe UI Semibold", 24)
+        )
+
+        title.pack(pady=(20, 25))
+
+        # ============================================
+        # ENCODER
+        # ============================================
+
+        encoder_label = ctk.CTkLabel(
+            config_window, text="Render Encoder", font=("Segoe UI", 14)
+        )
+
+        encoder_label.pack(anchor="w", padx=25)
+
+        encoder_menu = ctk.CTkOptionMenu(
+            config_window,
+            values=["CPU (libx264)", "NVIDIA (NVENC)", "AMD (AMF)", "Intel (QSV)"],
+            variable=self.encoder_var,
+            width=250,
+            command=lambda _: self.salvar_config(),
+        )
+
+        encoder_menu.pack(pady=(5, 20))
+
+        # ============================================
+        # LANGUAGE
+        # ============================================
+
+        language_label = ctk.CTkLabel(
+            config_window, text="Language", font=("Segoe UI", 14)
+        )
+
+        language_label.pack(anchor="w", padx=25)
+
+        language_label.pack(anchor="w", padx=25)
+
+        language_menu = ctk.CTkOptionMenu(
+            config_window,
+            values=["Português", "English"],
+            variable=self.language_var,
+            width=250,
+            command=lambda _: self.aplicar_idioma(),
+        )
+
+        language_menu.pack(pady=(5, 20))
+
+    def aplicar_idioma(self):
+
+        lang = translations[self.language_var.get()]
+
+        self.title(lang["title"])
+
+        self.title_label.configure(text=lang["title"])
+
+        self.hooks_title.configure(text=lang["hooks"])
+
+        self.corpos_title.configure(text=lang["bodies"])
+
+        self.cta_title.configure(text=lang["ctas"])
+
+        self.output_title.configure(text=lang["output"])
+
+        self.control_title.configure(text=lang["controls"])
+
+        self.logs_title.configure(text=lang["logs"])
+
+        self.btn_generate.configure(text=lang["generate"])
+
+        self.btn_stop.configure(text=lang["stop"])
+
+        self.progress_title.configure(text=lang["progress"])
+
+        self.auto_open_checkbox.configure(text=lang["auto_open"])
+
+        self.btn_open_output.configure(text=lang["open_output"])
+
+        self.status_label.configure(text=lang["ready"])
+
+        self.salvar_config()
+
+    def abrir_output(self):
+
+        if not self.output_path:
+            return
+
+        os.startfile(self.output_path)
+
+    def salvar_config(self):
+
+        config = {
+            "encoder": self.encoder_var.get(),
+            "auto_open": self.auto_open_var.get(),
+            "language": self.language_var.get(),
+        }
+
+        with open("settings.json", "w", encoding="utf-8") as f:
+
+            json.dump(config, f, indent=4)
+
+    def carregar_config(self):
+
+        if not os.path.exists("settings.json"):
+            return
+
+        try:
+
+            with open("settings.json", "r", encoding="utf-8") as f:
+
+                config = json.load(f)
+
+            self.encoder_var.set(config.get("encoder", "CPU (libx264)"))
+
+            self.auto_open_var.set(config.get("auto_open", False))
+
+            self.language_var.set(config.get("language", "Português"))
+
+        except:
+
+            pass
+        
+        self.aplicar_idioma()
+
     def __init__(self):
 
         super().__init__()
 
-        self.encoder_var = ctk.StringVar(
-            value="CPU (libx264)"
-        )
+        self.language_var = ctk.StringVar(value="Português")
+
+        # ============================================
+        # CONTAINER PRINCIPAL
+        # ============================================
+
+        self.main_container = ctk.CTkScrollableFrame(self, fg_color="transparent")
+
+        self.main_container.pack(fill="both", expand=True)
+
+        self.encoder_var = ctk.StringVar(value="CPU (libx264)")
 
         # ============================================
         # ESTADOS
@@ -1102,99 +1013,89 @@ class AutoAddApp(ctk.CTk):
         self.stop_requested = False
         self.renderizando = False
         self.current_process = None
-        
+
         # ============================================
         # JANELA
         # ============================================
 
-        self.title("AutoAdd Encoder")
+        self.title("AutoAD")
 
-        self.geometry("1280x820")
+        self.geometry("1180x760")
 
-        self.minsize(1100, 700)
+        self.minsize(980, 650)
 
         # ============================================
         # GRID PRINCIPAL
         # ============================================
 
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
-        
-        self.grid_rowconfigure(4, weight=1)
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.main_container.grid_columnconfigure(0, weight=1)
+
+        self.main_container.grid_columnconfigure(1, weight=1)
+
+        self.main_container.grid_rowconfigure(1, weight=1)
+
+        self.main_container.grid_rowconfigure(2, weight=1)
+
+        self.main_container.grid_rowconfigure(4, weight=1)
 
         # ============================================
         # TÍTULO
         # ============================================
 
-        title = ctk.CTkLabel(
-            self,
-            text="AutoAdd Encoder",
-            font=("Segoe UI", 28, "bold")
+        self.title_label = ctk.CTkLabel(
+            self.main_container, text="AutoAD", font=("Segoe UI", 28, "bold")
         )
 
-        title.grid(
-            row=0,
-            column=0,
-            columnspan=2,
-            pady=(20, 20)
+        self.title_label.grid(row=0, column=0, columnspan=2, pady=(20, 20))
+
+        settings_button = ctk.CTkButton(
+            self.main_container,
+            text="⚙",
+            width=40,
+            height=40,
+            corner_radius=12,
+            font=("Segoe UI", 18),
+            fg_color="#1e293b",
+            hover_color="#334155",
+            command=self.abrir_configuracoes,
         )
-        
-        
-        
-        
-        
+
+        settings_button.place(relx=0.97, y=35, anchor="ne")
+
         # ============================================
         # CARD HOOKS
         # ============================================
 
         hooks_card = ctk.CTkFrame(
-            self,
+            self.main_container,
             corner_radius=18,
             fg_color="#111827",
             border_width=1,
-            border_color="#2563eb"
+            border_color="#2563eb",
         )
 
-        hooks_card.grid(
-            row=1,
-            column=0,
-            padx=(20, 10),
-            pady=(10, 10),
-            sticky="nsew"
-        )
+        hooks_card.grid(row=1, column=0, padx=(20, 10), pady=(10, 10), sticky="nsew")
 
         # ============================================
         # TÍTULO HOOKS
         # ============================================
 
-        hooks_title = ctk.CTkLabel(
+        self.hooks_title = ctk.CTkLabel(
             hooks_card,
             text="🎣 HOOKS",
             font=("Segoe UI", 20, "bold"),
-            text_color="#60a5fa"
+            text_color="#60a5fa",
         )
 
-        hooks_title.pack(
-            anchor="w",
-            padx=20,
-            pady=(15, 10)
-        )
+        self.hooks_title.pack(anchor="w", padx=20, pady=(15, 10))
 
         # ============================================
         # BOTÕES
         # ============================================
 
-        hooks_buttons_frame = ctk.CTkFrame(
-            hooks_card,
-            fg_color="transparent"
-        )
+        hooks_buttons_frame = ctk.CTkFrame(hooks_card, fg_color="transparent")
 
-        hooks_buttons_frame.pack(
-            fill="x",
-            padx=20
-        )
+        hooks_buttons_frame.pack(fill="x", padx=20)
 
         btn_hooks_add = ctk.CTkButton(
             hooks_buttons_frame,
@@ -1202,13 +1103,10 @@ class AutoAddApp(ctk.CTk):
             width=140,
             height=38,
             corner_radius=12,
-            command=self.selecionar_hooks
+            command=self.selecionar_hooks,
         )
 
-        btn_hooks_add.pack(
-            side="left",
-            padx=(0, 10)
-        )
+        btn_hooks_add.pack(side="left", padx=(0, 10))
 
         btn_hooks_clear = ctk.CTkButton(
             hooks_buttons_frame,
@@ -1218,12 +1116,10 @@ class AutoAddApp(ctk.CTk):
             fg_color="#374151",
             hover_color="#4b5563",
             corner_radius=12,
-            command=self.limpar_hooks
+            command=self.limpar_hooks,
         )
 
-        btn_hooks_clear.pack(
-            side="left"
-        )
+        btn_hooks_clear.pack(side="left")
 
         # ============================================
         # DROP AREA
@@ -1235,27 +1131,14 @@ class AutoAddApp(ctk.CTk):
             fg_color="#0b1220",
             border_width=1,
             border_color="#1e3a8a",
-            height=260
-        )
-        
-        self.hooks_preview = ctk.CTkScrollableFrame(
-            hooks_drop,
-            fg_color="transparent"
+            height=260,
         )
 
-        self.hooks_preview.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=10
-        )
+        self.hooks_preview = ctk.CTkScrollableFrame(hooks_drop, fg_color="transparent")
 
-        hooks_drop.pack(
-            fill="both",
-            expand=True,
-            padx=20,
-            pady=20
-        )
+        self.hooks_preview.pack(fill="both", expand=True, padx=10, pady=10)
+
+        hooks_drop.pack(fill="both", expand=True, padx=20, pady=20)
 
         hooks_drop.pack_propagate(False)
 
@@ -1264,70 +1147,45 @@ class AutoAddApp(ctk.CTk):
             text="Arraste e solte os hooks aqui\n\nou clique em Adicionar",
             font=("Segoe UI", 18),
             text_color="#9ca3af",
-            justify="center"
+            justify="center",
         )
 
-        self.drop_label.place(
-            relx=0.5,
-            rely=0.5,
-            anchor="center"
-        )
-        
+        self.drop_label.place(relx=0.5, rely=0.5, anchor="center")
 
-        
-        
-        
-        
         # ============================================
         # CARD CORPOS
         # ============================================
 
         corpos_card = ctk.CTkFrame(
-            self,
+            self.main_container,
             corner_radius=18,
             fg_color="#1a1325",
             border_width=1,
-            border_color="#7c3aed"
+            border_color="#7c3aed",
         )
 
-        corpos_card.grid(
-            row=1,
-            column=1,
-            padx=(10, 20),
-            pady=(10, 10),
-            sticky="nsew"
-        )
+        corpos_card.grid(row=1, column=1, padx=(10, 20), pady=(10, 10), sticky="nsew")
 
         # ============================================
         # TÍTULO
         # ============================================
 
-        corpos_title = ctk.CTkLabel(
+        self.corpos_title = ctk.CTkLabel(
             corpos_card,
             text="🎬 CORPOS",
             font=("Segoe UI", 20, "bold"),
-            text_color="#c084fc"
+            text_color="#c084fc",
         )
 
-        corpos_title.pack(
-            anchor="w",
-            padx=20,
-            pady=(15, 10)
-        )
+        self.corpos_title.pack(anchor="w", padx=20, pady=(15, 10))
 
         # ============================================
         # BOTÕES
         # ============================================
 
-        corpos_buttons = ctk.CTkFrame(
-            corpos_card,
-            fg_color="transparent"
-        )
+        corpos_buttons = ctk.CTkFrame(corpos_card, fg_color="transparent")
 
-        corpos_buttons.pack(
-            fill="x",
-            padx=20
-        )
+        corpos_buttons.pack(fill="x", padx=20)
 
         btn_add_corpo = ctk.CTkButton(
             corpos_buttons,
@@ -1337,13 +1195,10 @@ class AutoAddApp(ctk.CTk):
             corner_radius=12,
             fg_color="#7c3aed",
             hover_color="#8b5cf6",
-            command=self.adicionar_corpo
+            command=self.adicionar_corpo,
         )
 
-        btn_add_corpo.pack(
-            side="left",
-            padx=(0, 10)
-        )
+        btn_add_corpo.pack(side="left", padx=(0, 10))
 
         btn_clear_corpos = ctk.CTkButton(
             corpos_buttons,
@@ -1353,12 +1208,10 @@ class AutoAddApp(ctk.CTk):
             corner_radius=12,
             fg_color="#3b2a50",
             hover_color="#4c3570",
-            command=self.limpar_corpos
+            command=self.limpar_corpos,
         )
 
-        btn_clear_corpos.pack(
-            side="left"
-        )
+        btn_clear_corpos.pack(side="left")
 
         # ============================================
         # ÁREA DOS CORPOS
@@ -1370,69 +1223,47 @@ class AutoAddApp(ctk.CTk):
             fg_color="#120d1c",
             border_width=1,
             border_color="#5b21b6",
-            height=260
+            height=260,
         )
 
-        self.corpos_area.pack(
-            fill="both",
-            expand=True,
-            padx=20,
-            pady=20
-        )
+        self.corpos_area.pack(fill="both", expand=True, padx=20, pady=20)
 
         self.adicionar_corpo()
-            
-            
+
         # ============================================
         # CARD CTA
         # ============================================
 
         cta_card = ctk.CTkFrame(
-            self,
+            self.main_container,
             corner_radius=18,
             fg_color="#102016",
             border_width=1,
-            border_color="#22c55e"
+            border_color="#22c55e",
         )
 
-        cta_card.grid(
-            row=2,
-            column=0,
-            padx=(20, 10),
-            pady=(0, 10),
-            sticky="nsew"
-        )
+        cta_card.grid(row=2, column=0, padx=(20, 10), pady=(0, 10), sticky="nsew")
 
         # ============================================
         # TÍTULO
         # ============================================
 
-        cta_title = ctk.CTkLabel(
+        self.cta_title = ctk.CTkLabel(
             cta_card,
             text="📢 CTAs",
             font=("Segoe UI", 20, "bold"),
-            text_color="#4ade80"
+            text_color="#4ade80",
         )
 
-        cta_title.pack(
-            anchor="w",
-            padx=20,
-            pady=(15, 10)
-        )
+        self.cta_title.pack(anchor="w", padx=20, pady=(15, 10))
 
         # ============================================
         # BOTÕES
         # ============================================
 
-        cta_buttons = ctk.CTkFrame(
-            cta_card,
-            fg_color="transparent"
-        )
+        cta_buttons = ctk.CTkFrame(cta_card, fg_color="transparent")
 
-        cta_buttons.pack(
-            fill="x",
-            padx=20
-        )
+        cta_buttons.pack(fill="x", padx=20)
 
         btn_cta_add = ctk.CTkButton(
             cta_buttons,
@@ -1442,13 +1273,10 @@ class AutoAddApp(ctk.CTk):
             corner_radius=12,
             fg_color="#16a34a",
             hover_color="#22c55e",
-            command=self.selecionar_cta
+            command=self.selecionar_cta,
         )
 
-        btn_cta_add.pack(
-            side="left",
-            padx=(0, 10)
-        )
+        btn_cta_add.pack(side="left", padx=(0, 10))
 
         btn_cta_clear = ctk.CTkButton(
             cta_buttons,
@@ -1458,12 +1286,10 @@ class AutoAddApp(ctk.CTk):
             corner_radius=12,
             fg_color="#1f3b2b",
             hover_color="#2b513b",
-            command=self.limpar_cta
+            command=self.limpar_cta,
         )
 
-        btn_cta_clear.pack(
-            side="left"
-        )
+        btn_cta_clear.pack(side="left")
 
         # ============================================
         # DROP AREA
@@ -1475,82 +1301,52 @@ class AutoAddApp(ctk.CTk):
             fg_color="#0b1a11",
             border_width=1,
             border_color="#166534",
-            height=180
+            height=180,
         )
 
-        cta_drop.pack(
-            fill="both",
-            expand=True,
-            padx=20,
-            pady=20
-        )
+        cta_drop.pack(fill="both", expand=True, padx=20, pady=20)
 
         cta_drop.pack_propagate(False)
-        
-        self.cta_preview = ctk.CTkScrollableFrame(
-            cta_drop,
-            fg_color="transparent"
-        )
 
-        self.cta_preview.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=10
-        )
+        self.cta_preview = ctk.CTkScrollableFrame(cta_drop, fg_color="transparent")
+
+        self.cta_preview.pack(fill="both", expand=True, padx=10, pady=10)
 
         self.cta_label = ctk.CTkLabel(
             cta_drop,
             text="Adicione os vídeos CTA",
             font=("Segoe UI", 18),
-            text_color="#9ca3af"
+            text_color="#9ca3af",
         )
 
-        self.cta_label.place(
-            relx=0.5,
-            rely=0.5,
-            anchor="center"
-        )
-        
-        
-        
-        
+        self.cta_label.place(relx=0.5, rely=0.5, anchor="center")
+
         # ============================================
         # CARD SAÍDA
         # ============================================
 
         output_card = ctk.CTkFrame(
-            self,
+            self.main_container,
             corner_radius=18,
             fg_color="#2a1a0f",
             border_width=1,
-            border_color="#f59e0b"
+            border_color="#f59e0b",
         )
 
-        output_card.grid(
-            row=2,
-            column=1,
-            padx=(10, 20),
-            pady=(0, 10),
-            sticky="nsew"
-        )
+        output_card.grid(row=2, column=1, padx=(10, 20), pady=(0, 10), sticky="nsew")
 
         # ============================================
         # TÍTULO
         # ============================================
 
-        output_title = ctk.CTkLabel(
+        self.output_title = ctk.CTkLabel(
             output_card,
             text="📁 SAÍDA",
             font=("Segoe UI", 20, "bold"),
-            text_color="#fbbf24"
+            text_color="#fbbf24",
         )
 
-        output_title.pack(
-            anchor="w",
-            padx=20,
-            pady=(15, 10)
-        )
+        self.output_title.pack(anchor="w", padx=20, pady=(15, 10))
 
         # ============================================
         # DESCRIÇÃO
@@ -1560,13 +1356,10 @@ class AutoAddApp(ctk.CTk):
             output_card,
             text="Escolha onde os vídeos serão exportados",
             font=("Segoe UI", 14),
-            text_color="#9ca3af"
+            text_color="#9ca3af",
         )
 
-        output_desc.pack(
-            anchor="w",
-            padx=20
-        )
+        output_desc.pack(anchor="w", padx=20)
 
         # ============================================
         # BOTÃO
@@ -1581,14 +1374,10 @@ class AutoAddApp(ctk.CTk):
             fg_color="#d97706",
             hover_color="#f59e0b",
             font=("Segoe UI", 14, "bold"),
-            command=self.selecionar_output
+            command=self.selecionar_output,
         )
 
-        btn_output.pack(
-            padx=20,
-            pady=(20, 10),
-            anchor="w"
-        )
+        btn_output.pack(padx=20, pady=(20, 10), anchor="w")
 
         # ============================================
         # LABEL
@@ -1599,56 +1388,39 @@ class AutoAddApp(ctk.CTk):
             text="Nenhuma pasta selecionada",
             wraplength=420,
             justify="left",
-            text_color="#d1d5db"
+            text_color="#d1d5db",
         )
 
-        self.output_label.pack(
-            anchor="w",
-            padx=20,
-            pady=(0, 20)
-        )
-        
-        
-        
-        
+        self.output_label.pack(anchor="w", padx=20, pady=(0, 20))
+
         # ============================================
         # CARD CONTROLES
         # ============================================
 
         control_card = ctk.CTkFrame(
-            self,
+            self.main_container,
             corner_radius=20,
             fg_color="#161616",
             border_width=1,
-            border_color="#3f3f46"
+            border_color="#3f3f46",
         )
 
         control_card.grid(
-            row=3,
-            column=0,
-            columnspan=2,
-            padx=20,
-            pady=(0, 10),
-            sticky="ew"
+            row=3, column=0, columnspan=2, padx=20, pady=(0, 10), sticky="ew"
         )
-        
 
         # ============================================
         # HEADER
         # ============================================
 
-        control_title = ctk.CTkLabel(
+        self.control_title = ctk.CTkLabel(
             control_card,
             text="⚡ CONTROLES",
             font=("Segoe UI", 22, "bold"),
-            text_color="#f3f4f6"
+            text_color="#f3f4f6",
         )
 
-        control_title.pack(
-            anchor="w",
-            padx=20,
-            pady=(15, 5)
-        )
+        self.control_title.pack(anchor="w", padx=20, pady=(15, 5))
 
         # ============================================
         # TOTAL
@@ -1658,71 +1430,48 @@ class AutoAddApp(ctk.CTk):
             control_card,
             text="Total previsto: 0 vídeos",
             font=("Segoe UI", 15, "bold"),
-            text_color="#9ca3af"
+            text_color="#9ca3af",
         )
 
-        self.total_label.pack(
-            anchor="w",
-            padx=20,
-            pady=(0, 15)
-        )
+        self.total_label.pack(anchor="w", padx=20, pady=(0, 15))
 
-        encoder_frame = ctk.CTkFrame(
-            control_card,
-            fg_color="transparent"
-        )
-
-        encoder_frame.pack(
-            fill="x",
-            padx=20,
-            pady=(5, 15)
-        )
-
-        encoder_label = ctk.CTkLabel(
-            encoder_frame,
-            text="Encoder:",
-            font=("Segoe UI", 14, "bold")
-        )
-
-        encoder_label.pack(
-            side="left",
-            padx=(0, 10)
-        )
-
-        encoder_menu = ctk.CTkOptionMenu(
-            encoder_frame,
-            values=[
-                "CPU (libx264)",
-                "NVIDIA (NVENC)",
-                "AMD (AMF)",
-                "Intel (QSV)"
-            ],
-            variable=self.encoder_var,
-            width=220
-        )
-
-        encoder_menu.pack(
-            side="left"
-        )
         # ============================================
-        # BOTÕES
+        # CONTROLS CONTENT
         # ============================================
 
-        buttons_frame = ctk.CTkFrame(
-            control_card,
-            fg_color="transparent"
-        )
+        controls_content = ctk.CTkFrame(control_card, fg_color="transparent")
 
-        buttons_frame.pack(
-            fill="x",
-            padx=20
-        )
+        controls_content.pack(fill="x", padx=20, pady=(0, 20))
+
+        # ============================================
+        # LEFT SIDE
+        # ============================================
+
+        left_controls = ctk.CTkFrame(controls_content, fg_color="transparent")
+
+        left_controls.pack(side="left", anchor="n")
+
+        # ============================================
+        # RIGHT SIDE
+        # ============================================
+
+        right_controls = ctk.CTkFrame(controls_content, fg_color="transparent")
+
+        right_controls.pack(side="right", anchor="ne")
+
+        # ============================================
+        # BUTTONS FRAME
+        # ============================================
+
+        buttons_frame = ctk.CTkFrame(left_controls, fg_color="transparent")
+
+        buttons_frame.pack(anchor="w")
 
         # ============================================
         # BOTÃO GERAR
         # ============================================
 
-        btn_generate = ctk.CTkButton(
+        self.btn_generate = ctk.CTkButton(
             buttons_frame,
             text="GERAR VÍDEOS",
             width=260,
@@ -1731,20 +1480,16 @@ class AutoAddApp(ctk.CTk):
             fg_color="#2563eb",
             hover_color="#3b82f6",
             font=("Segoe UI", 16, "bold"),
-            command=self.iniciar_geracao
+            command=self.iniciar_geracao,
         )
 
-        btn_generate.pack(
-            side="left",
-            padx=(0, 15),
-            pady=(0, 20)
-        )
+        self.btn_generate.pack(side="left", padx=(0, 15), pady=(0, 20))
 
         # ============================================
         # BOTÃO STOP
         # ============================================
 
-        btn_stop = ctk.CTkButton(
+        self.btn_stop = ctk.CTkButton(
             buttons_frame,
             text="STOP",
             width=140,
@@ -1753,43 +1498,65 @@ class AutoAddApp(ctk.CTk):
             fg_color="#991b1b",
             hover_color="#dc2626",
             font=("Segoe UI", 16, "bold"),
-            command=self.parar
+            command=self.parar,
         )
 
-        btn_stop.pack(
-            side="left",
-            pady=(0, 20)
+        self.btn_stop.pack(side="left", pady=(0, 20))
+
+        # ============================================
+        # OUTPUT OPTIONS
+        # ============================================
+
+        output_options = ctk.CTkFrame(right_controls, fg_color="transparent")
+
+        output_options.pack(anchor="e")
+
+        self.auto_open_var = ctk.BooleanVar(value=False)
+
+        self.auto_open_checkbox = ctk.CTkCheckBox(
+            output_options,
+            text="Open destination at end",
+            variable=self.auto_open_var,
+            font=("Segoe UI", 14),
+            command=self.salvar_config,
         )
+
+        self.auto_open_checkbox.pack(anchor="w", pady=(0, 10))
+
+        self.btn_open_output = ctk.CTkButton(
+            output_options,
+            text="Open Output Folder",
+            height=42,
+            corner_radius=12,
+            fg_color="#374151",
+            hover_color="#4b5563",
+            command=self.abrir_output,
+        )
+
+        self.btn_open_output.pack(anchor="w")
 
         # ============================================
         # PROGRESSO
         # ============================================
 
-        progress_title = ctk.CTkLabel(
+        self.progress_title = ctk.CTkLabel(
             control_card,
             text="PROGRESSO",
             font=("Segoe UI", 14, "bold"),
-            text_color="#d1d5db"
+            text_color="#d1d5db",
         )
 
-        progress_title.pack(
-            anchor="w",
-            padx=20
-        )
+        self.progress_title.pack(anchor="w", padx=20)
 
         self.progressbar = ctk.CTkProgressBar(
             control_card,
             width=700,
             height=18,
             corner_radius=10,
-            progress_color="#2563eb"
+            progress_color="#2563eb",
         )
 
-        self.progressbar.pack(
-            fill="x",
-            padx=20,
-            pady=(10, 5)
-        )
+        self.progressbar.pack(fill="x", padx=20, pady=(10, 5))
 
         self.progressbar.set(0)
 
@@ -1798,70 +1565,47 @@ class AutoAddApp(ctk.CTk):
         # ============================================
 
         self.progress_label = ctk.CTkLabel(
-            control_card,
-            text="0 / 0",
-            font=("Segoe UI", 13),
-            text_color="#9ca3af"
+            control_card, text="0 / 0", font=("Segoe UI", 13), text_color="#9ca3af"
         )
 
-        self.progress_label.pack(
-            anchor="w",
-            padx=20,
-            pady=(0, 20)
-        )
-        
-        
-        
+        self.progress_label.pack(anchor="w", padx=20, pady=(0, 20))
+
         # ============================================
         # CARD LOGS
         # ============================================
 
         logs_card = ctk.CTkFrame(
-            self,
+            self.main_container,
             corner_radius=20,
             fg_color="#101010",
             border_width=1,
-            border_color="#27272a"
+            border_color="#27272a",
         )
 
         logs_card.grid(
-            row=4,
-            column=0,
-            columnspan=2,
-            padx=20,
-            pady=(0, 20),
-            sticky="nsew"
+            row=4, column=0, columnspan=2, padx=20, pady=(0, 20), sticky="nsew"
         )
 
         # ============================================
         # HEADER
         # ============================================
 
-        logs_header = ctk.CTkFrame(
-            logs_card,
-            fg_color="transparent"
-        )
+        logs_header = ctk.CTkFrame(logs_card, fg_color="transparent")
 
-        logs_header.pack(
-            fill="x",
-            padx=20,
-            pady=(15, 10)
-        )
+        logs_header.pack(fill="x", padx=20, pady=(15, 10))
 
         # ============================================
         # TÍTULO
         # ============================================
 
-        logs_title = ctk.CTkLabel(
+        self.logs_title = ctk.CTkLabel(
             logs_header,
             text="📜 LOGS",
             font=("Segoe UI", 20, "bold"),
-            text_color="#f4f4f5"
+            text_color="#f4f4f5",
         )
 
-        logs_title.pack(
-            side="left"
-        )
+        self.logs_title.pack(side="left")
 
         # ============================================
         # STATUS
@@ -1871,12 +1615,10 @@ class AutoAddApp(ctk.CTk):
             logs_header,
             text="Sistema pronto",
             font=("Segoe UI", 13),
-            text_color="#22c55e"
+            text_color="#22c55e",
         )
 
-        self.status_label.pack(
-            side="right"
-        )
+        self.status_label.pack(side="right")
 
         # ============================================
         # LOG BOX
@@ -1889,31 +1631,19 @@ class AutoAddApp(ctk.CTk):
             border_width=1,
             border_color="#18181b",
             font=("Consolas", 13),
-            activate_scrollbars=True
+            activate_scrollbars=True,
         )
 
-        self.log_box.pack(
-            fill="both",
-            expand=True,
-            padx=20,
-            pady=(0, 20)
-        )
+        self.log_box.pack(fill="both", expand=True, padx=20, pady=(0, 20))
 
         # ============================================
         # LOG INICIAL
         # ============================================
 
-        self.log_box.insert(
-            "end",
-            "AutoAdd iniciado com sucesso.\n"
-        )
+        self.log_box.insert("end", "AutoAdd iniciado com sucesso.\n")
 
-        self.log_box.insert(
-            "end",
-            "FFmpeg carregado.\n"
-        )
+        self.log_box.insert("end", "FFmpeg carregado.\n")
 
-        self.log_box.insert(
-            "end",
-            "Sistema pronto para uso.\n"
-        )
+        self.log_box.insert("end", "Sistema pronto para uso.\n")
+
+        self.carregar_config()
