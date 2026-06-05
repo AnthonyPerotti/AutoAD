@@ -1,143 +1,119 @@
 import os
-import threading
-
+# pyrefly: ignore [missing-import]
 import customtkinter as ctk
 
-from PIL import Image
-
-from core.thumbnails import gerar_thumbnail
-
-
 class HooksPanel(ctk.CTkFrame):
-
-    def __init__(self, parent, on_select_folder):
-
+    def __init__(self, parent, on_select_folder, on_clear_folder=None):
         super().__init__(
             parent,
-            corner_radius=20,
-            fg_color="#161616",
-            border_width=1,
-            border_color="#3f3f46",
+            corner_radius=10,
+            fg_color="#1e1e24",  # Dark background
+            border_width=2,
+            border_color="#1d4ed8",  # Blue accent
         )
-
         self.hooks_path = ""
-
         self.on_select_folder = on_select_folder
+        self.on_clear_folder = on_clear_folder
 
-        # ============================================
-        # TITLE
-        # ============================================
+        # Title Header
+        self.header_frame = ctk.CTkFrame(self, fg_color="#3b82f6", corner_radius=6, height=30)
+        self.header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        self.header_frame.pack_propagate(False)
 
         self.hooks_title = ctk.CTkLabel(
-            self, text="🎣 HOOKS", font=("Segoe UI", 22, "bold"), text_color="#f3f4f6"
+            self.header_frame, text="HOOK", font=("Segoe UI", 14, "bold"), text_color="#ffffff"
         )
+        self.hooks_title.place(relx=0.5, rely=0.5, anchor="center")
 
-        self.hooks_title.pack(anchor="w", padx=20, pady=(15, 10))
+        # Content Container
+        self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.content_frame.pack(fill="both", expand=True, padx=20, pady=15)
 
-        # ============================================
-        # BUTTON
-        # ============================================
+        # Row 1: Button, Path, Trash
+        self.row1 = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        self.row1.pack(fill="x")
 
         self.select_button = ctk.CTkButton(
-            self,
-            text="Selecionar Pasta",
-            width=180,
-            height=40,
-            corner_radius=12,
+            self.row1,
+            text="📁 SELECT FOLDER",
+            width=160,
+            height=36,
+            corner_radius=6,
+            fg_color="#1d4ed8",
+            text_color="#ffffff",
+            hover_color="#2563eb",
+            font=("Segoe UI", 13, "bold"),
             command=self.select_folder,
         )
+        self.select_button.pack(side="left", padx=(0, 10))
 
-        self.select_button.pack(anchor="w", padx=20, pady=(0, 15))
+        self.path_entry = ctk.CTkEntry(
+            self.row1,
+            height=36,
+            fg_color="#27272a",
+            border_width=1,
+            border_color="#3f3f46",
+            text_color="#d1d5db"
+        )
+        self.path_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.path_entry.insert(0, "No folder selected")
+        self.path_entry.configure(state="readonly")
 
-        # ============================================
-        # SCROLL
-        # ============================================
+        self.btn_clear = ctk.CTkButton(
+            self.row1,
+            text="🗑",
+            width=36,
+            height=36,
+            corner_radius=6,
+            fg_color="#3f3f46",
+            hover_color="#52525b",
+            font=("Segoe UI", 16),
+            command=self.on_clear_folder if self.on_clear_folder else self.clear_folder,
+        )
+        self.btn_clear.pack(side="left")
 
-        self.preview = ctk.CTkScrollableFrame(self, height=260, fg_color="#0f172a")
-
-        self.preview.pack(fill="both", expand=True, padx=20, pady=(0, 20))
-
-        # ============================================
-        # LOADING LABEL
-        # ============================================
-
-        self.loading_label = ctk.CTkLabel(
-            self.preview,
-            text="Nenhum hook carregado",
-            font=("Segoe UI", 14),
+        # Row 2: Videos Found Text
+        self.count_label = ctk.CTkLabel(
+            self.content_frame,
+            text="0 videos found",
+            font=("Segoe UI", 12),
             text_color="#9ca3af",
         )
-
-        self.loading_label.pack(pady=40)
+        self.count_label.pack(anchor="e", pady=(5, 0))
 
     def select_folder(self):
-
         self.on_select_folder()
 
     def set_path(self, path):
-
         self.hooks_path = path
+        self.path_entry.configure(state="normal")
+        self.path_entry.delete(0, "end")
+        if path:
+            self.path_entry.insert(0, path)
+        else:
+            no_folder_text = self.lang["no_folder"] if hasattr(self, 'lang') else "No folder selected"
+            self.path_entry.insert(0, no_folder_text)
+        self.path_entry.configure(state="readonly")
+        
+        if path and os.path.exists(path):
+            videos = [f for f in os.listdir(path) if f.lower().endswith(".mp4")]
+            videos_found_text = self.lang["videos_found"] if hasattr(self, 'lang') else "{} videos found"
+            self.count_label.configure(text=videos_found_text.format(len(videos)))
+        else:
+            videos_found_text = self.lang["videos_found"] if hasattr(self, 'lang') else "{} videos found"
+            self.count_label.configure(text=videos_found_text.format(0))
 
-        self.loading_label.configure(text="Carregando previews...")
+    def update_language(self, lang):
+        self.lang = lang
+        self.hooks_title.configure(text=lang["hooks"])
+        self.select_button.configure(text=lang["select_folder"])
+        self.btn_clear.configure(text=lang["clear"])
+        self.set_path(self.hooks_path)
 
-        threading.Thread(target=self.load_hooks, daemon=True).start()
+    def clear_folder(self):
+        self.hooks_path = ""
+        self.set_path("")
 
     def clear_preview(self):
-
-        for widget in self.preview.winfo_children():
-
-            widget.destroy()
-
-    def load_hooks(self):
-
-        self.after(0, self.clear_preview)
-
-        videos = [f for f in os.listdir(self.hooks_path) if f.lower().endswith(".mp4")]
-
-        for index, video in enumerate(videos):
-
-            full_path = os.path.join(self.hooks_path, video)
-
-            thumb = gerar_thumbnail(full_path)
-
-            row = index // 3
-            col = index % 3
-
-            self.after(
-                0,
-                lambda v=video, t=thumb, r=row, c=col: self.create_hook_card(
-                    v, t, r, c
-                ),
-            )
-
-    def create_hook_card(self, video, thumb, row, col):
-
-        item = ctk.CTkFrame(
-            self.preview, corner_radius=10, fg_color="#111827", width=180, height=150
-        )
-
-        item.grid(row=row, column=col, padx=8, pady=8, sticky="n")
-
-        item.grid_propagate(False)
-
-        if thumb and os.path.exists(thumb):
-
-            try:
-
-                image = Image.open(thumb)
-
-                img = ctk.CTkImage(light_image=image, dark_image=image, size=(160, 90))
-
-                img_label = ctk.CTkLabel(item, image=img, text="")
-
-                img_label.image = img
-
-                img_label.pack(pady=(10, 5))
-
-            except:
-
-                pass
-
-        text = ctk.CTkLabel(item, text=video, font=("Segoe UI", 13))
-
-        text.pack(padx=8, pady=(0, 8))
+        # Kept for compatibility with main_window.py (to avoid crashes if called)
+        self.clear_folder()

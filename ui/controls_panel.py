@@ -1,186 +1,130 @@
+# pyrefly: ignore [missing-import]
 import customtkinter as ctk
 
 
 class ControlsPanel(ctk.CTkFrame):
-
     def __init__(
         self,
         parent,
         total_var,
         progress_var,
         progress_text_var,
-        auto_open_var,
+        auto_open_var,  # Not used visually here anymore, moved to OUTPUT logically in main window
         on_generate,
         on_stop,
-        on_open_output,
+        on_open_output, # Also moved to OUTPUT conceptually, but kept in signature if needed
         on_auto_open_change,
     ):
-
         super().__init__(
             parent,
-            corner_radius=20,
-            fg_color="#161616",
+            corner_radius=10,
+            fg_color="#1e1e24",
             border_width=1,
-            border_color="#3f3f46",
+            border_color="#52525b", # Grey border
         )
 
-        # ============================================
-        # HEADER
-        # ============================================
+        # Container with padding
+        self.container = ctk.CTkFrame(self, fg_color="transparent")
+        self.container.pack(fill="both", expand=True, padx=20, pady=20)
 
+        # Header Title
         self.control_title = ctk.CTkLabel(
-            self,
-            text="⚡ CONTROLES",
-            font=("Segoe UI", 22, "bold"),
-            text_color="#f3f4f6",
+            self.container,
+            text="PROCESS CONTROLES",
+            font=("Segoe UI", 16),
+            text_color="#d1d5db",
         )
+        self.control_title.pack(anchor="w", pady=(0, 15))
 
-        self.control_title.pack(anchor="w", padx=20, pady=(15, 5))
+        # Row 1: Total Box and EXPORT Button
+        self.row1 = ctk.CTkFrame(self.container, fg_color="transparent")
+        self.row1.pack(fill="x", pady=(0, 20))
 
-        # ============================================
-        # TOTAL
-        # ============================================
+        # Left: Total Box
+        self.total_box = ctk.CTkFrame(
+            self.row1,
+            corner_radius=8,
+            fg_color="#18181b",
+            border_width=1,
+            border_color="#3f3f46"
+        )
+        self.total_box.pack(side="left", fill="y", ipadx=20)
+        
+        self.total_lbl_top = ctk.CTkLabel(
+            self.total_box,
+            text="TOTAL",
+            font=("Segoe UI", 10),
+            text_color="#9ca3af"
+        )
+        self.total_lbl_top.pack(pady=(10, 0))
 
         self.total_label = ctk.CTkLabel(
-            self,
+            self.total_box,
             textvariable=total_var,
-            font=("Segoe UI", 15, "bold"),
-            text_color="#9ca3af",
+            font=("Segoe UI", 20, "bold"),
+            text_color="#ffffff",
         )
+        self.total_label.pack(pady=(0, 10))
 
-        self.total_label.pack(anchor="w", padx=20, pady=(0, 15))
+        self.is_generating = False
+        self.on_generate = on_generate
+        self.on_stop = on_stop
 
-        # ============================================
-        # CONTENT
-        # ============================================
-
-        controls_content = ctk.CTkFrame(self, fg_color="transparent")
-
-        controls_content.pack(fill="x", padx=20, pady=(0, 20))
-
-        # ============================================
-        # LEFT
-        # ============================================
-
-        left_controls = ctk.CTkFrame(controls_content, fg_color="transparent")
-
-        left_controls.pack(side="left", anchor="n")
-
-        # ============================================
-        # RIGHT
-        # ============================================
-
-        right_controls = ctk.CTkFrame(controls_content, fg_color="transparent")
-
-        right_controls.pack(side="right", anchor="ne")
-
-        # ============================================
-        # BUTTONS
-        # ============================================
-
-        buttons_frame = ctk.CTkFrame(left_controls, fg_color="transparent")
-
-        buttons_frame.pack(anchor="w")
-
+        # Right: EXPORT button
         self.btn_generate = ctk.CTkButton(
-            buttons_frame,
-            text="GERAR VÍDEOS",
-            width=260,
-            height=52,
-            corner_radius=16,
-            fg_color="#2563eb",
-            hover_color="#3b82f6",
-            font=("Segoe UI", 16, "bold"),
-            command=on_generate,
+            self.row1,
+            text="EXPORT",
+            height=60,
+            corner_radius=10,
+            fg_color="#0d9488",
+            hover_color="#14b8a6",
+            font=("Segoe UI", 22, "bold"),
+            command=self.toggle_action,
         )
+        self.btn_generate.pack(side="left", fill="both", expand=True, padx=(15, 0))
 
-        self.btn_generate.pack(side="left", padx=(0, 15), pady=(0, 20))
-
-        self.btn_stop = ctk.CTkButton(
-            buttons_frame,
-            text="STOP",
-            width=140,
-            height=52,
-            corner_radius=16,
-            fg_color="#991b1b",
-            hover_color="#dc2626",
-            font=("Segoe UI", 16, "bold"),
-            command=on_stop,
-        )
-
-        self.btn_stop.pack(side="left", pady=(0, 20))
-
-        # ============================================
-        # OUTPUT OPTIONS
-        # ============================================
-
-        output_options = ctk.CTkFrame(right_controls, fg_color="transparent")
-
-        output_options.pack(anchor="e")
-
-        self.auto_open_checkbox = ctk.CTkCheckBox(
-            output_options,
-            text="Open destination at end",
-            variable=auto_open_var,
-            font=("Segoe UI", 14),
-            command=on_auto_open_change,
-        )
-
-        self.auto_open_checkbox.pack(anchor="w", pady=(0, 10))
-
-        self.btn_open_output = ctk.CTkButton(
-            output_options,
-            text="Open Output Folder",
-            height=42,
-            corner_radius=12,
-            fg_color="#374151",
-            hover_color="#4b5563",
-            command=on_open_output,
-        )
-
-        self.btn_open_output.pack(anchor="w")
-
-        # ============================================
-        # PROGRESS TITLE
-        # ============================================
-
-        self.progress_title = ctk.CTkLabel(
-            self, text="PROGRESSO", font=("Segoe UI", 14, "bold"), text_color="#d1d5db"
-        )
-
-        self.progress_title.pack(anchor="w", padx=20)
-
-        # ============================================
-        # PROGRESS BAR
-        # ============================================
-
+        # Row 2: Progress Bar
         self.progressbar = ctk.CTkProgressBar(
-            self, width=700, height=18, corner_radius=10, progress_color="#2563eb"
+            self.container, height=12, corner_radius=6, progress_color="#14b8a6", fg_color="#3f3f46"
         )
-
-        self.progressbar.pack(fill="x", padx=20, pady=(10, 5))
-
+        self.progressbar.pack(fill="x", pady=(0, 10))
         self.progressbar.set(0)
 
-        # ============================================
-        # PROGRESS LABEL
-        # ============================================
-
+        # Row 3: Progress text
         self.progress_label = ctk.CTkLabel(
-            self,
+            self.container,
             textvariable=progress_text_var,
-            font=("Segoe UI", 13),
-            text_color="#9ca3af",
+            font=("Segoe UI", 12),
+            text_color="#d1d5db",
         )
+        self.progress_label.pack(anchor="w")
 
-        self.progress_label.pack(anchor="w", padx=20, pady=(0, 20))
-
-        # ============================================
-        # STATUS
-        # ============================================
-
+        # Status Label (Hidden or used for something else, since mock doesn't have it here)
         self.status_label = ctk.CTkLabel(
-            self, text="Pronto", font=("Segoe UI", 14, "bold"), text_color="#22c55e"
+            self.container, text="", font=("Segoe UI", 12), text_color="#22c55e"
         )
+        # self.status_label.pack(anchor="w") # Not packing, let's keep it accessible
 
-        self.status_label.pack(anchor="w", padx=20, pady=(0, 20))
+    def toggle_action(self):
+        if self.is_generating:
+            if self.on_stop: self.on_stop()
+        else:
+            if self.on_generate: self.on_generate()
+
+    def set_generating_state(self, is_generating):
+        self.is_generating = is_generating
+        self.update_button_text()
+
+    def update_button_text(self):
+        if self.is_generating:
+            txt = self.lang["stop"] if hasattr(self, 'lang') else "STOP"
+            self.btn_generate.configure(text=txt, fg_color="#991b1b", hover_color="#dc2626")
+        else:
+            txt = self.lang["generate"] if hasattr(self, 'lang') else "EXPORT"
+            self.btn_generate.configure(text=txt, fg_color="#0d9488", hover_color="#14b8a6")
+
+    def update_language(self, lang):
+        self.lang = lang
+        self.control_title.configure(text=lang["controls"])
+        self.total_lbl_top.configure(text=lang["total"])
+        self.update_button_text()

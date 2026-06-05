@@ -1,258 +1,198 @@
 import os
-
+# pyrefly: ignore [missing-import]
 import customtkinter as ctk
 
-from PIL import Image
-
-from core.thumbnails import gerar_thumbnail
-
+class BodyData:
+    def __init__(self):
+        self.path = ""
 
 class CorposPanel(ctk.CTkFrame):
-
     def __init__(self, parent, on_select, on_update_total, on_log):
-
         super().__init__(
             parent,
-            corner_radius=18,
-            fg_color="#1a1325",
-            border_width=1,
-            border_color="#7c3aed",
+            corner_radius=10,
+            fg_color="#1e1e24",
+            border_width=2,
+            border_color="#7e22ce",  # Purple accent
         )
-
         self.on_select = on_select
-
         self.on_update_total = on_update_total
-
         self.on_log = on_log
+        
+        self.cards = [BodyData(), BodyData(), BodyData()]
+        self.current_tab = 0
 
-        self.cards = []
-
-        # ============================================
-        # TITLE
-        # ============================================
+        # Title Header
+        self.header_frame = ctk.CTkFrame(self, fg_color="#7e22ce", corner_radius=6, height=30)
+        self.header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        self.header_frame.pack_propagate(False)
 
         self.corpos_title = ctk.CTkLabel(
-            self, text="🎬 CORPOS", font=("Segoe UI", 20, "bold"), text_color="#c084fc"
+            self.header_frame, text="BODY", font=("Segoe UI", 14, "bold"), text_color="#ffffff"
         )
+        self.corpos_title.place(relx=0.5, rely=0.5, anchor="center")
 
-        self.corpos_title.pack(anchor="w", padx=20, pady=(15, 10))
+        # Custom Tabs Container
+        self.tab_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.tab_container.pack(fill="x", padx=20, pady=(15, 0))
+        self.tab_container.grid_columnconfigure((0, 1, 2), weight=1)
+        
+        self.tab_frames = []
+        self.tab_labels_on = []
+        self.tab_labels_name = []
+        
+        tab_names = ["Body A", "Body B", "Body C"]
+        for i, name in enumerate(tab_names):
+            # Tab Frame acts as button
+            t_frame = ctk.CTkFrame(self.tab_container, height=30, corner_radius=6, cursor="hand2")
+            t_frame.grid(row=0, column=i, sticky="ew", padx=2)
+            t_frame.pack_propagate(False)
+            
+            # Use inner frame to center contents
+            inner = ctk.CTkFrame(t_frame, fg_color="transparent")
+            inner.place(relx=0.5, rely=0.5, anchor="center")
+            
+            lbl_name = ctk.CTkLabel(inner, text=name, font=("Segoe UI", 13), text_color="#ffffff")
+            lbl_name.pack(side="left")
+            
+            lbl_on = ctk.CTkLabel(inner, text="", font=("Segoe UI", 13, "bold"), text_color="#00ff00") # Neon Green
+            lbl_on.pack(side="left", padx=(5, 0))
+            
+            # Bind clicks
+            for w in [t_frame, inner, lbl_name, lbl_on]:
+                w.bind("<Button-1>", lambda e, idx=i: self.on_tab_click(idx))
+                
+            self.tab_frames.append(t_frame)
+            self.tab_labels_on.append(lbl_on)
+            self.tab_labels_name.append(lbl_name)
 
-        # ============================================
-        # BUTTONS
-        # ============================================
+        # Content Container
+        self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.content_frame.pack(fill="both", expand=True, padx=20, pady=(15, 15))
 
-        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        # Row 1: Button, Path, Trash
+        self.row1 = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        self.row1.pack(fill="x")
 
-        buttons.pack(fill="x", padx=20)
-
-        self.btn_add = ctk.CTkButton(
-            buttons,
-            text="+ Adicionar Corpo",
-            width=180,
-            height=38,
-            corner_radius=12,
-            fg_color="#7c3aed",
-            hover_color="#8b5cf6",
-            command=self.add_body,
+        self.select_button = ctk.CTkButton(
+            self.row1,
+            text="📁 SELECT FOLDER",
+            width=160,
+            height=36,
+            corner_radius=6,
+            fg_color="#7e22ce",
+            text_color="#ffffff",
+            hover_color="#9333ea",
+            font=("Segoe UI", 13, "bold"),
+            command=self.select_folder,
         )
+        self.select_button.pack(side="left", padx=(0, 10))
 
-        self.btn_add.pack(side="left", padx=(0, 10))
+        self.path_entry = ctk.CTkEntry(
+            self.row1,
+            height=36,
+            fg_color="#27272a",
+            border_width=1,
+            border_color="#3f3f46",
+            text_color="#d1d5db"
+        )
+        self.path_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.path_entry.insert(0, "No folder selected")
+        self.path_entry.configure(state="readonly")
 
         self.btn_clear = ctk.CTkButton(
-            buttons,
-            text="Limpar",
-            width=120,
-            height=38,
-            corner_radius=12,
-            fg_color="#3b2a50",
-            hover_color="#4c3570",
-            command=self.clear,
+            self.row1,
+            text="🗑",
+            width=36,
+            height=36,
+            corner_radius=6,
+            fg_color="#3f3f46",
+            hover_color="#52525b",
+            font=("Segoe UI", 16),
+            command=self.clear_current_folder,
         )
-
         self.btn_clear.pack(side="left")
 
-        # ============================================
-        # AREA
-        # ============================================
-
-        self.area = ctk.CTkScrollableFrame(
-            self,
-            corner_radius=16,
-            fg_color="#120d1c",
-            border_width=1,
-            border_color="#5b21b6",
-            height=260,
+        # Row 2: Scenes Found Text
+        self.count_label = ctk.CTkLabel(
+            self.content_frame,
+            text="0 scenes found",
+            font=("Segoe UI", 12),
+            text_color="#9ca3af",
         )
+        self.count_label.pack(anchor="e", pady=(5, 0))
 
-        self.area.pack(fill="both", expand=True, padx=20, pady=20)
+        self.update_ui_for_tab()
 
-        self.add_body()
+    def on_tab_click(self, index):
+        self.current_tab = index
+        self.update_ui_for_tab()
 
-    def add_body(self):
+    def update_ui_for_tab(self):
+        # Update Tab Styling
+        for i, t_frame in enumerate(self.tab_frames):
+            if i == self.current_tab:
+                t_frame.configure(fg_color="#7e22ce")
+            else:
+                t_frame.configure(fg_color="#27272a")
+                
+        # Update "On" text for all tabs
+        for i, lbl_on in enumerate(self.tab_labels_on):
+            if self.cards[i].path:
+                lbl_on.configure(text="On")
+            else:
+                lbl_on.configure(text="")
+                
+        path = self.cards[self.current_tab].path
+        
+        self.path_entry.configure(state="normal")
+        self.path_entry.delete(0, "end")
+        if path:
+            self.path_entry.insert(0, path)
+        else:
+            no_folder_text = self.lang["no_folder"] if hasattr(self, 'lang') else "No folder selected"
+            self.path_entry.insert(0, no_folder_text)
+        self.path_entry.configure(state="readonly")
+        
+        if path and os.path.exists(path):
+            videos = [f for f in os.listdir(path) if f.lower().endswith(".mp4")]
+            scenes_found_text = self.lang["scenes_found"] if hasattr(self, 'lang') else "{} scenes found"
+            self.count_label.configure(text=scenes_found_text.format(len(videos)))
+        else:
+            scenes_found_text = self.lang["scenes_found"] if hasattr(self, 'lang') else "{} scenes found"
+            self.count_label.configure(text=scenes_found_text.format(0))
 
-        if len(self.cards) >= 6:
+    def update_language(self, lang):
+        self.lang = lang
+        self.corpos_title.configure(text=lang["bodies"])
+        self.select_button.configure(text=lang["select_folder"])
+        self.btn_clear.configure(text=lang["clear"])
+        
+        body_tab_format = lang.get("body_tab", "Body {}")
+        for i, lbl_name in enumerate(self.tab_labels_name):
+            lbl_name.configure(text=body_tab_format.format(["A", "B", "C"][i]))
+            
+        self.update_ui_for_tab()
 
-            self.on_log("Limite máximo de corpos atingido.")
-
-            return
-
-        index = len(self.cards) + 1
-
-        card = ctk.CTkFrame(self.area, corner_radius=12, fg_color="#241737")
-
-        card.pack(fill="x", pady=8, padx=5)
-
-        card.path = ""
-
-        # ============================================
-        # LABEL
-        # ============================================
-
-        title = ctk.CTkLabel(card, text=f"Corpo {index}", font=("Segoe UI", 14, "bold"))
-
-        title.pack(side="left", padx=15, pady=12)
-
-        # ============================================
-        # SELECT BUTTON
-        # ============================================
-
-        preview = ctk.CTkScrollableFrame(card, height=180, fg_color="#1a1325")
-
-        preview.pack(fill="x", padx=10, pady=(0, 10))
-
-        path_label = ctk.CTkLabel(
-            card, text="Nenhuma pasta selecionada", text_color="#9ca3af"
-        )
-
-        path_label.pack(anchor="w", padx=15, pady=(0, 10))
-
-        btn_select = ctk.CTkButton(
-            card,
-            text="Selecionar Pasta",
-            width=160,
-            height=32,
-            corner_radius=10,
-            command=lambda: self.select_body(card, path_label, preview),
-        )
-
-        btn_select.pack(side="right", padx=10, pady=10)
-
-        # ============================================
-        # REMOVE BUTTON
-        # ============================================
-
-        btn_remove = ctk.CTkButton(
-            card,
-            text="-",
-            width=32,
-            height=32,
-            corner_radius=10,
-            fg_color="#991b1b",
-            hover_color="#dc2626",
-            command=lambda: self.remove_body(card),
-        )
-
-        btn_remove.pack(side="right", padx=(0, 5))
-
-        self.cards.append(card)
-
-    def update_indexes(self):
-
-        for i, card in enumerate(self.cards):
-
-            for widget in card.winfo_children():
-
-                if isinstance(widget, ctk.CTkLabel):
-
-                    text = widget.cget("text")
-
-                    if text.startswith("Corpo"):
-
-                        widget.configure(text=f"Corpo {i+1}")
-
-    def remove_body(self, card):
-
-        if len(self.cards) <= 1:
-            return
-
-        self.cards.remove(card)
-
-        card.destroy()
-
-        self.update_indexes()
-
-        self.on_update_total()
-
-        self.on_log("Corpo removido.")
-
-    def select_body(self, card, label, preview):
-
+    def select_folder(self):
         path = self.on_select()
-
         if not path:
             return
-
-        card.path = path
-
-        label.configure(text=os.path.basename(path))
-
-        self.show_preview(path, preview)
-
+        
+        self.cards[self.current_tab].path = path
+        self.update_ui_for_tab()
         self.on_update_total()
+        self.on_log(f"Body {self.current_tab + 1} loaded: {path}")
 
-        self.on_log(f"Corpo carregado: {path}")
-
-    def show_preview(self, path, preview):
-
-        for widget in preview.winfo_children():
-
-            widget.destroy()
-
-        videos = [f for f in os.listdir(path) if f.lower().endswith(".mp4")]
-
-        for index, video in enumerate(videos):
-
-            full_path = os.path.join(path, video)
-
-            thumb = gerar_thumbnail(full_path)
-
-            item = ctk.CTkFrame(
-                preview, corner_radius=10, fg_color="#241737", width=180, height=150
-            )
-
-            row = index // 3
-            col = index % 3
-
-            item.grid(row=row, column=col, padx=8, pady=8, sticky="n")
-
-            item.grid_propagate(False)
-
-            if thumb and os.path.exists(thumb):
-
-                image = Image.open(thumb)
-
-                img = ctk.CTkImage(light_image=image, dark_image=image, size=(160, 90))
-
-                img_label = ctk.CTkLabel(item, image=img, text="")
-
-                img_label.image = img
-
-                img_label.pack(padx=5, pady=5)
-
-            text = ctk.CTkLabel(item, text=video, wraplength=120, font=("Segoe UI", 11))
-
-            text.pack(padx=5, pady=(0, 5))
+    def clear_current_folder(self):
+        self.cards[self.current_tab].path = ""
+        self.update_ui_for_tab()
+        self.on_update_total()
+        self.on_log(f"Body {self.current_tab + 1} cleared.")
 
     def clear(self):
-
         for card in self.cards:
-
-            card.destroy()
-
-        self.cards.clear()
-
-        self.add_body()
-
+            card.path = ""
+        self.update_ui_for_tab()
         self.on_update_total()
-
-        self.on_log("Corpos removidos.")
+        self.on_log("Bodies cleared.")
