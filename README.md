@@ -1,30 +1,38 @@
-# AutoAD
+# AutoAD Suite v2.0
 
-Modern desktop application for automated batch video generation using FFmpeg.
+Modern desktop application suite for automated batch video generation and file management.
 
-AutoAD allows you to dynamically combine Hooks, Bodies and CTAs, generating large-scale video variations automatically through a modern desktop interface optimized for speed, usability and workflow automation.
+AutoAD allows you to dynamically combine Hooks, Bodies and CTAs, generating large-scale video variations automatically through a modern desktop interface optimized for speed, usability and workflow automation. It also includes utility tools like a Bulk File Renamer.
 
 ---
 
-# Features
+## Features
 
-* Modern desktop UI
+### Content Assembler
+* Dynamic body management (multiple folders)
+* Batch video rendering combining Hooks, Bodies, and CTAs
+* Fixed native naming pattern: `[AD_{num}] {hook}{body_a}{body_b}...{cta}`
+* Smart overwrite behavior handling (Ask, Skip, Rename, Overwrite)
 * Automatic thumbnail previews
-* Dynamic body management
-* Batch video rendering
-* Real-time render queue
-* Collapsible logs and queue panels
-* Persistent settings system
-* Automatic output folder opening
-* Responsive scrollable interface
-* Instant render stop
-* FFmpeg integration
-* Automatic video combination system
-* Professional render workflow
+* Real-time render queue and logs
+* FFmpeg integration with CPU and GPU encoding support
+
+### Bulk Renamer
+* Bulk rename files in any directory
+* Live preview of new filenames before applying
+* Prefix and Suffix configuration
+* Sequential numbering
+* Search and Replace functionality
+
+### General
+* Modern Sidebar Navigation
+* Multilingual support (English, Português)
+* Dynamic UI Scaling
+* Light and Dark Theme
 
 ---
 
-# Supported Encoders
+## Supported Encoders (Assembler)
 
 | Encoder | Hardware |
 |---|---|
@@ -35,21 +43,21 @@ AutoAD allows you to dynamically combine Hooks, Bodies and CTAs, generating larg
 
 ---
 
-# Requirements
+## Requirements
 
-* Python 3.14+
-* FFmpeg
+* Python 3.10+
+* FFmpeg (in `tools/` folder)
 * CustomTkinter
 * Pillow
 
 ---
 
-# Installation
+## Installation
 
 Clone repository:
 
 ```bash
-git clone https://github.com/yourusername/AutoAD.git
+git clone https://github.com/AnthonyPerotti/AutoAD.git
 cd AutoAD
 ```
 
@@ -73,7 +81,7 @@ pip install -r requirements.txt
 
 ---
 
-# Running
+## Running
 
 ```bash
 python app.py
@@ -81,21 +89,17 @@ python app.py
 
 ---
 
-# Build Executable
+## Build Executable
+
+Run the following command to generate the standalone executable using PyInstaller:
 
 ```bash
-pyinstaller ^
---onedir ^
---windowed ^
---name "AutoAD" ^
---icon="assets/icon.ico" ^
---add-data "tools;tools" ^
-app.py
+pyinstaller --onedir --windowed --name "AutoAD Suite" --icon="assets/icon.ico" --add-data "tools;tools" --add-data "assets;assets" app.py
 ```
 
 ---
 
-# Project Structure
+## Project Structure
 
 ```text
 AutoAD/
@@ -109,78 +113,30 @@ AutoAD/
 │
 ├── core/
 │   ├── config.py
-│   ├── ffmpeg.py
-│   ├── render_job.py
-│   ├── renderer.py
-│   ├── thumbnails.py
+│   ├── theme.py
 │   ├── translations.py
-│   └── state.py
+│   └── utils.py
+│
+├── apps/
+│   ├── assembler/     # Content Assembler App
+│   ├── renamer/       # Bulk Renamer App
+│   └── resizer/       # (Placeholder) Video Resizer App
 │
 ├── ui/
-│   ├── main_window.py
-│   ├── hooks_panel.py
-│   ├── corpos_panel.py
-│   ├── cta_panel.py
-│   ├── controls_panel.py
-│   ├── logs_panel.py
-│   ├── render_queue_panel.py
-│   └── settings_window.py
+│   └── hub_window.py  # Main navigation and router
 │
-├── tools/
-│   └── ffmpeg.exe
-│
-├── temp/
-│
-└── settings.example.json
+└── tools/
+    └── ffmpeg.exe
 ```
 
 ---
 
-# Workflow
-
-1. Add Hooks
-2. Add Bodies
-3. Add CTAs
-4. Select output folder
-5. Choose encoder
-6. Generate videos automatically
-
-AutoAD automatically combines all valid variations and generates the final renders in batch.
-
----
-
-# AutoAD v2.0
-
-Major rewrite including:
-
-* Complete UI redesign
-* Modular architecture
-* RenderManager pipeline
-* RenderJob system
-* Visual render queue
-* Improved FFmpeg handling
-* Persistent settings
-* Better responsiveness
-* Improved rendering stability
-* Cleaner workflow UX
-
----
-
-# Notes
-
-* FFmpeg must exist inside the `tools/` folder.
-* GPU encoding depends on compatible hardware and drivers.
-* `--onedir` builds are recommended for stability.
-* Render queue is automatically generated during rendering sessions.
-
----
-
-# License
+## License
 
 MIT License
 
 ---
 
-# Author
+## Author
 
 Developed by Anthony Perotti

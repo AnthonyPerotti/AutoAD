@@ -1,6 +1,6 @@
 translations = {
     "Português": {
-        "title": "AutoAD Content Assembler v1.6",
+        "title": "AutoAD Suite v2.0",
         "hooks": "HOOK",
         "bodies": "BODY",
         "ctas": "CTA",
@@ -24,8 +24,9 @@ translations = {
         "body_tab": "Body {}",
         # Sidebar & Header translations
         "dashboard": "Dashboard",
+        "dashboard_subtitle": "Visualize as estatísticas e informações do sistema.",
         "aplicacoes": "APLICAÇÕES",
-        "content_assembler": "AutoAD Content Assembler",
+        "content_assembler": "Content Assembler",
         "outras_ferramentas": "Outras Ferramentas",
         "suporte_header": "SUPORTE",
         "suporte": "Suporte",
@@ -36,13 +37,14 @@ translations = {
         "sistema_online": "Sistema Online",
         "sistema_normal": "Sistema operacional normal",
         "subtitle": "Monte, organize e exporte seus conteúdos de forma rápida e eficiente.",
+        "module_subtitle": "Explore esta ferramenta do AutoAD Suite.",
         "hook_subtitle": "Selecione a pasta com os vídeos de Hook",
         "body_subtitle": "Selecione as pastas com os vídeos de Body",
         "cta_subtitle": "Selecione a pasta com os vídeos de CTA",
-        "output_subtitle": "Selecione a pasta de destino para exportação"
+        "output_subtitle": "Selecione a pasta de destino para exportação",
     },
     "English": {
-        "title": "AutoAD Content Assembler v1.6",
+        "title": "AutoAD Suite v2.0",
         "hooks": "HOOK",
         "bodies": "BODY",
         "ctas": "CTA",
@@ -66,8 +68,9 @@ translations = {
         "body_tab": "Body {}",
         # Sidebar & Header translations
         "dashboard": "Dashboard",
+        "dashboard_subtitle": "View system statistics and information.",
         "aplicacoes": "APPLICATIONS",
-        "content_assembler": "AutoAD Content Assembler",
+        "content_assembler": "Content Assembler",
         "outras_ferramentas": "Other Tools",
         "suporte_header": "SUPPORT",
         "suporte": "Support",
@@ -78,10 +81,10 @@ translations = {
         "sistema_online": "System Online",
         "sistema_normal": "System operating normal",
         "subtitle": "Assemble, organize and export your content quickly and efficiently.",
+        "module_subtitle": "Explore this AutoAD Suite tool.",
         "hook_subtitle": "Select the folder with Hook videos",
         "body_subtitle": "Select the folders with Body videos",
         "cta_subtitle": "Select the folder with CTA videos",
-        "output_subtitle": "Select the destination folder for export"
+        "output_subtitle": "Select the destination folder for export",
     },
 }
-

@@ -1,7 +1,7 @@
-from ui.main_window import AutoAddApp
+from ui.hub_window import AutoADSuiteApp
 
 if __name__ == "__main__":
 
-    app = AutoAddApp()
+    app = AutoADSuiteApp()
 
     app.mainloop()
