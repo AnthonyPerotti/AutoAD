@@ -8,7 +8,7 @@ AutoAD is a modular ecosystem containing powerful applications like the **Conten
 
 ## Features
 
-### 🎬 Content Assembler
+### Content Assembler
 * Dynamic body management (multiple folders)
 * Batch video rendering combining Hooks, Bodies, and CTAs
 * Fixed native naming pattern: `[AD_{num}] {hook}{body_a}{body_b}...{cta}`
@@ -17,24 +17,24 @@ AutoAD is a modular ecosystem containing powerful applications like the **Conten
 * Real-time render queue and logs
 * FFmpeg integration with CPU and GPU encoding support
 
-### 🔄 Video Converter
+### Video Converter
 * Batch resize and crop videos (e.g. 9:16 TikTok/Reels, 16:9 YouTube, 1:1, 4:5)
 * Configure custom Bitrate, FPS, and Resolutions
 * Apply image or text Watermarks on the same export
 * Smart background modes (Blur Background, Solid Color, Stretch)
 
-### 🎵 Audio Toolkit
+### Audio Toolkit
 * Peak Normalization (dB) using FFmpeg true peak `loudnorm`
 * Cut silence automatically
 * Batch extract videos to MP3
 
-### 🏷️ Bulk Renamer
+### Bulk Renamer
 * Bulk rename files in any directory
 * Live preview of new filenames before applying
 * Prefix and Suffix configuration (including Hybrid Sequential numbering)
 * Search and Replace functionality
 
-### ⚙️ General
+### General
 * Modern Sidebar Navigation & unified Dashboard
 * Multilingual support (English, Português)
 * Dynamic UI Scaling
