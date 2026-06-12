@@ -8,7 +8,10 @@ from core.theme import COLORS, FONTS, SIZES
 from core.utils import get_resource_path
 
 from apps.assembler.ui.view import AssemblerView
-from apps.resizer.ui.view import PlaceholderModuleView
+from apps.resizer.ui.view import ResizerView
+from apps.renamer.ui.view import RenamerView
+from apps.watermark.ui.view import WatermarkView
+from ui.placeholder import PlaceholderModuleView
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -17,11 +20,11 @@ ctk.set_default_color_theme("blue")
 # Module registry: key, icon, label_pt, label_en, is_placeholder
 MODULES = [
     ("assembler", "📦", "Content Assembler", "Content Assembler", False),
-    ("resizer", "🖼", "Video Resizer", "Video Resizer", True),
-    ("subtitles", "📝", "Subtitle Studio", "Subtitle Studio", True),
-    ("exporter", "📤", "Social Export Manager", "Social Export Manager", True),
-    ("watermark", "💧", "Video Watermarker", "Video Watermarker", True),
-    ("audio_tools", "🎵", "Audio Toolkit", "Audio Toolkit", True),
+    ("resizer", "🖼", "Video Resizer", "Video Resizer", False),
+    ("subtitles", "📝", "Subtitle Studio", "Subtitle Studio", False),
+    ("exporter", "📤", "Social Export Manager", "Social Export Manager", False),
+    ("watermark", "💧", "Video Watermarker", "Video Watermarker", False),
+    ("audio_tools", "🎵", "Audio Toolkit", "Audio Toolkit", False),
     ("renamer", "🏷", "Bulk Renamer", "Bulk Renamer", False),
 ]
 
@@ -346,6 +349,11 @@ class AutoADSuiteApp(ctk.CTk):
         # ==========================================
         from apps.assembler.ui.view import AssemblerView
         from apps.renamer.ui.view import RenamerView
+        from apps.resizer.ui.view import ResizerView
+        from apps.watermark.ui.view import WatermarkView
+        from apps.subtitles.ui.view import SubtitlesView
+        from apps.audio_tools.ui.view import AudioToolsView
+        from apps.exporter.ui.view import ExporterView
 
         self.assembler_view = AssemblerView(self.view_container, self)
         self.assembler_view.pack(fill="both", expand=True)
@@ -359,6 +367,16 @@ class AutoADSuiteApp(ctk.CTk):
                 self.module_views[key] = view
             elif key == "renamer":
                 self.module_views[key] = RenamerView(self.view_container, self)
+            elif key == "resizer":
+                self.module_views[key] = ResizerView(self.view_container, self)
+            elif key == "watermark":
+                self.module_views[key] = WatermarkView(self.view_container, self)
+            elif key == "subtitles":
+                self.module_views[key] = SubtitlesView(self.view_container, self)
+            elif key == "audio_tools":
+                self.module_views[key] = AudioToolsView(self.view_container, self)
+            elif key == "exporter":
+                self.module_views[key] = ExporterView(self.view_container, self)
 
         # Dashboard
         self.dashboard_view = ctk.CTkFrame(self.view_container, fg_color="transparent")
@@ -386,6 +404,11 @@ class AutoADSuiteApp(ctk.CTk):
 
         # Config Load
         config = carregar_config()
+        if "encoder" not in config:
+            from core.utils import detect_best_encoder
+            config["encoder"] = detect_best_encoder()
+            salvar_config(config)
+
         self.encoder_var.set(config.get("encoder", "CPU (libx264)"))
         self.auto_open_var.set(config.get("auto_open", False))
         self.language_var.set(config.get("language", "English"))
@@ -432,7 +455,8 @@ class AutoADSuiteApp(ctk.CTk):
         self.card1.pack_propagate(False)
         lbl1 = ctk.CTkLabel(self.card1, text="Módulos Disponíveis", font=("Segoe UI", 11), text_color=COLORS["text_muted"])
         lbl1.pack(pady=(15, 5))
-        self.db_stat_modules = ctk.CTkLabel(self.card1, text="6", font=("Segoe UI", 24, "bold"), text_color=COLORS["hook"])
+        active_modules = sum(1 for m in MODULES if not m[4])
+        self.db_stat_modules = ctk.CTkLabel(self.card1, text=str(active_modules), font=("Segoe UI", 24, "bold"), text_color=COLORS["hook"])
         self.db_stat_modules.pack()
 
         self.card2 = ctk.CTkFrame(self.db_grid, fg_color=COLORS["bg_panel"], border_width=1, border_color=COLORS["border"], height=100, corner_radius=12)
@@ -440,8 +464,9 @@ class AutoADSuiteApp(ctk.CTk):
         self.card2.pack_propagate(False)
         lbl2 = ctk.CTkLabel(self.card2, text="Renderizador", font=("Segoe UI", 11), text_color=COLORS["text_muted"])
         lbl2.pack(pady=(15, 5))
-        self.db_stat_renderer = ctk.CTkLabel(self.card2, text="FFmpeg", font=("Segoe UI", 16, "bold"), text_color=COLORS["cta"])
+        self.db_stat_renderer = ctk.CTkLabel(self.card2, text=self.encoder_var.get(), font=("Segoe UI", 12, "bold"), text_color=COLORS["cta"])
         self.db_stat_renderer.pack()
+        self.encoder_var.trace_add("write", lambda *args: self.db_stat_renderer.configure(text=self.encoder_var.get()))
 
         self.card3 = ctk.CTkFrame(self.db_grid, fg_color=COLORS["bg_panel"], border_width=1, border_color=COLORS["border"], height=100, corner_radius=12)
         self.card3.grid(row=0, column=2, padx=10, sticky="ew")

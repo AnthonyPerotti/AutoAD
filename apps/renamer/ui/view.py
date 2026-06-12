@@ -3,6 +3,7 @@ import os
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from core.theme import COLORS, FONTS, SIZES
+from core.ui_utils import AutoScrollableFrame
 
 class RenamerView(ctk.CTkFrame):
     def __init__(self, parent, hub):
@@ -10,12 +11,17 @@ class RenamerView(ctk.CTkFrame):
         self.hub = hub
         self.target_dir = ""
         self.files = []
+        self.lang = {}
         
-        self.grid_rowconfigure(2, weight=1)
-        self.grid_columnconfigure(0, weight=1)
+        # Add Scrollable wrapper just in case horizontal width is too small
+        self.scroll_frame = AutoScrollableFrame(self, fg_color="transparent")
+        self.scroll_frame.pack(fill="both", expand=True)
+        
+        self.scroll_frame.grid_rowconfigure(2, weight=1)
+        self.scroll_frame.grid_columnconfigure(0, weight=1)
         
         # --- HEADER / FOLDER SELECT ---
-        self.header_frame = ctk.CTkFrame(self, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
+        self.header_frame = ctk.CTkFrame(self.scroll_frame, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
         self.header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(15, 10))
         
         self.btn_select = ctk.CTkButton(
@@ -29,19 +35,21 @@ class RenamerView(ctk.CTkFrame):
         self.lbl_path.pack(side="left", padx=10, fill="x", expand=True)
 
         # --- RULES PANEL ---
-        self.rules_frame = ctk.CTkFrame(self, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
+        self.rules_frame = ctk.CTkFrame(self.scroll_frame, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
         self.rules_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=10)
         
         # Find / Replace
         row1 = ctk.CTkFrame(self.rules_frame, fg_color="transparent")
         row1.pack(fill="x", padx=15, pady=(15, 5))
         
-        ctk.CTkLabel(row1, text="Procurar:", width=60, anchor="w").pack(side="left")
+        self.lbl_search = ctk.CTkLabel(row1, text="Procurar:", width=60, anchor="w")
+        self.lbl_search.pack(side="left")
         self.entry_find = ctk.CTkEntry(row1, width=150)
         self.entry_find.pack(side="left", padx=(5, 15))
         self.entry_find.bind("<KeyRelease>", self.update_preview)
         
-        ctk.CTkLabel(row1, text="Substituir:", width=60, anchor="w").pack(side="left")
+        self.lbl_replace = ctk.CTkLabel(row1, text="Substituir:", width=60, anchor="w")
+        self.lbl_replace.pack(side="left")
         self.entry_replace = ctk.CTkEntry(row1, width=150)
         self.entry_replace.pack(side="left", padx=(5, 15))
         self.entry_replace.bind("<KeyRelease>", self.update_preview)
@@ -50,12 +58,14 @@ class RenamerView(ctk.CTkFrame):
         row2 = ctk.CTkFrame(self.rules_frame, fg_color="transparent")
         row2.pack(fill="x", padx=15, pady=5)
         
-        ctk.CTkLabel(row2, text="Prefixo:", width=60, anchor="w").pack(side="left")
+        self.lbl_prefix = ctk.CTkLabel(row2, text="Prefixo:", width=60, anchor="w")
+        self.lbl_prefix.pack(side="left")
         self.entry_prefix = ctk.CTkEntry(row2, width=150)
         self.entry_prefix.pack(side="left", padx=(5, 15))
         self.entry_prefix.bind("<KeyRelease>", self.update_preview)
         
-        ctk.CTkLabel(row2, text="Sufixo:", width=60, anchor="w").pack(side="left")
+        self.lbl_suffix = ctk.CTkLabel(row2, text="Sufixo:", width=60, anchor="w")
+        self.lbl_suffix.pack(side="left")
         self.entry_suffix = ctk.CTkEntry(row2, width=150)
         self.entry_suffix.pack(side="left", padx=(5, 15))
         self.entry_suffix.bind("<KeyRelease>", self.update_preview)
@@ -76,14 +86,14 @@ class RenamerView(ctk.CTkFrame):
         self.btn_execute.pack(side="right")
 
         # --- PREVIEW PANEL ---
-        self.preview_frame = ctk.CTkScrollableFrame(self, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
+        self.preview_frame = ctk.CTkScrollableFrame(self.scroll_frame, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
         self.preview_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=(10, 20))
         
         self.preview_label = ctk.CTkLabel(self.preview_frame, text="Visualização aparecerá aqui...", font=("Consolas", 12), text_color=COLORS["text_muted"], justify="left", anchor="nw")
         self.preview_label.pack(fill="both", expand=True, padx=10, pady=10)
 
     def select_directory(self):
-        folder = filedialog.askdirectory(title="Selecione a pasta com os arquivos para renomear")
+        folder = filedialog.askdirectory(title=self.lang.get("select_folder", "Selecione a pasta com os arquivos para renomear"))
         if folder:
             self.target_dir = folder
             self.lbl_path.configure(text=folder)
@@ -94,7 +104,7 @@ class RenamerView(ctk.CTkFrame):
             self.files = [f for f in os.listdir(self.target_dir) if os.path.isfile(os.path.join(self.target_dir, f))]
             self.update_preview()
         except Exception as e:
-            self.preview_label.configure(text=f"Erro ao ler pasta: {e}")
+            pass
 
     def get_new_name(self, original_name, index):
         name, ext = os.path.splitext(original_name)
@@ -119,7 +129,7 @@ class RenamerView(ctk.CTkFrame):
 
     def update_preview(self, event=None):
         if not self.files:
-            self.preview_label.configure(text="Nenhum arquivo na pasta.")
+            self.preview_label.configure(text=self.lang.get("no_folder_selected", "Nenhuma pasta selecionada."))
             return
             
         lines = []
@@ -154,8 +164,19 @@ class RenamerView(ctk.CTkFrame):
                     except Exception as e:
                         print(f"Erro renomeando {f}: {e}")
                         
-        messagebox.showinfo("Sucesso", f"{count} arquivos renomeados com sucesso!")
+        messagebox.showinfo("Sucesso", self.lang.get("done", "Concluído! {} vídeos processados.").format(count))
         self.load_files() # refresh
 
     def update_language(self, lang):
-        pass # Placeholder for actual translation logic
+        self.lang = lang
+        self.btn_select.configure(text=lang.get("select_folder", "📂 Selecionar Pasta"))
+        if not self.target_dir:
+            self.lbl_path.configure(text=lang.get("no_folder_selected", "Nenhuma pasta selecionada"))
+            self.preview_label.configure(text=lang.get("waiting_for_videos", "Visualização aparecerá aqui...").strip())
+        
+        self.lbl_search.configure(text=lang.get("rn_search", "Procurar por:"))
+        self.lbl_replace.configure(text=lang.get("rn_replace", "Substituir por:"))
+        self.lbl_prefix.configure(text=lang.get("rn_prefix", "Prefixo:"))
+        self.lbl_suffix.configure(text=lang.get("rn_suffix", "Sufixo:"))
+        self.chk_numbering.configure(text=lang.get("val_mode_seq", "Adicionar numeração (_001)"))
+        self.btn_execute.configure(text=lang.get("start_renamer", "Renomear Arquivos"))
