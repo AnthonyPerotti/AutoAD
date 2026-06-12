@@ -1,14 +1,14 @@
-# AutoAD Suite v2.0
+# AutoAD Suite v2.1
 
-Modern desktop application suite for automated batch video generation and file management.
+Modern desktop application suite for automated batch video generation, conversions, and file management.
 
-AutoAD allows you to dynamically combine Hooks, Bodies and CTAs, generating large-scale video variations automatically through a modern desktop interface optimized for speed, usability and workflow automation. It also includes utility tools like a Bulk File Renamer.
+AutoAD is a modular ecosystem containing powerful applications like the **Content Assembler** (dynamic video combinations of Hooks, Bodies and CTAs), **Video Converter** (batch resizer and watermarker), **Audio Toolkit** (peak normalization, extraction, silence cutting), and a **Bulk Renamer**, all managed within a single beautiful interface optimized for speed and workflow automation.
 
 ---
 
 ## Features
 
-### Content Assembler
+### 🎬 Content Assembler
 * Dynamic body management (multiple folders)
 * Batch video rendering combining Hooks, Bodies, and CTAs
 * Fixed native naming pattern: `[AD_{num}] {hook}{body_a}{body_b}...{cta}`
@@ -17,22 +17,33 @@ AutoAD allows you to dynamically combine Hooks, Bodies and CTAs, generating larg
 * Real-time render queue and logs
 * FFmpeg integration with CPU and GPU encoding support
 
-### Bulk Renamer
+### 🔄 Video Converter
+* Batch resize and crop videos (e.g. 9:16 TikTok/Reels, 16:9 YouTube, 1:1, 4:5)
+* Configure custom Bitrate, FPS, and Resolutions
+* Apply image or text Watermarks on the same export
+* Smart background modes (Blur Background, Solid Color, Stretch)
+
+### 🎵 Audio Toolkit
+* Peak Normalization (dB) using FFmpeg true peak `loudnorm`
+* Cut silence automatically
+* Batch extract videos to MP3
+
+### 🏷️ Bulk Renamer
 * Bulk rename files in any directory
 * Live preview of new filenames before applying
-* Prefix and Suffix configuration
-* Sequential numbering
+* Prefix and Suffix configuration (including Hybrid Sequential numbering)
 * Search and Replace functionality
 
-### General
-* Modern Sidebar Navigation
+### ⚙️ General
+* Modern Sidebar Navigation & unified Dashboard
 * Multilingual support (English, Português)
 * Dynamic UI Scaling
 * Light and Dark Theme
+* Optional: Open Output Folder upon job completion
 
 ---
 
-## Supported Encoders (Assembler)
+## Supported Encoders (Global)
 
 | Encoder | Hardware |
 |---|---|
@@ -93,8 +104,14 @@ python app.py
 
 Run the following command to generate the standalone executable using PyInstaller:
 
+**One-file Portable Executable:**
 ```bash
-pyinstaller --onedir --windowed --name "AutoAD Suite" --icon="assets/icon.ico" --add-data "tools;tools" --add-data "assets;assets" app.py
+pyinstaller --noconfirm --windowed --onefile --icon "assets/icon.ico" --add-data "tools/ffmpeg.exe;tools" --add-data "assets;assets" --name "AutoAD Suite" app.py
+```
+
+**Directory Build (Faster Startup):**
+```bash
+pyinstaller "AutoAD Suite.spec" --noconfirm
 ```
 
 ---
@@ -120,7 +137,9 @@ AutoAD/
 ├── apps/
 │   ├── assembler/     # Content Assembler App
 │   ├── renamer/       # Bulk Renamer App
-│   └── resizer/       # (Placeholder) Video Resizer App
+│   ├── converter/     # Video Converter App
+│   ├── audio_tools/   # Audio Toolkit App
+│   └── subtitles/     # Subtitles Tools App (WIP)
 │
 ├── ui/
 │   └── hub_window.py  # Main navigation and router

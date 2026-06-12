@@ -12,14 +12,17 @@ class AudioToolsManager:
     def stop(self):
         self.stop_requested = True
 
-    def _get_ffmpeg_cmd(self, input_path, output_path, extract_mp3, normalize, boost_db, remove_silence, encoder):
+    def _get_ffmpeg_cmd(self, input_path, output_path, extract_mp3, normalize, peak_db, remove_silence, encoder):
         cmd = [FFMPEG_PATH, "-y", "-i", input_path]
         
         audio_filters = []
         if normalize:
-            audio_filters.append("loudnorm=I=-23:LRA=7:tp=-2:print_format=summary")
-        if boost_db and boost_db != "0":
-            audio_filters.append(f"volume={boost_db}dB")
+            try:
+                pdb = float(peak_db)
+            except:
+                pdb = -1.0
+            audio_filters.append(f"loudnorm=I=-14:LRA=11:tp={pdb}")
+            
         if remove_silence:
             audio_filters.append("silenceremove=stop_periods=-1:stop_duration=0.5:stop_threshold=-40dB")
 
@@ -38,15 +41,13 @@ class AudioToolsManager:
                 cmd.extend(["-c:v", "h264_qsv", "-preset", "medium"])
             else:
                 cmd.extend(["-c:v", "libx264", "-preset", "fast"])
-            # Or we could just use "-c:v", "copy" if video doesn't need re-encoding?
-            # Wait, if we only filter audio, we CAN just copy video! This is way faster.
             cmd.extend(["-c:v", "copy"])
             cmd.extend(["-c:a", "aac", "-b:a", "192k"])
             
         cmd.append(output_path)
         return cmd
 
-    def process_batch(self, videos, output_dir, extract_mp3, normalize, boost_db, remove_silence, encoder, log_callback, progress_callback, finish_callback):
+    def process_batch(self, videos, output_dir, extract_mp3, normalize, peak_db, remove_silence, encoder, log_callback, progress_callback, finish_callback):
         self.is_running = True
         self.stop_requested = False
         
@@ -68,7 +69,7 @@ class AudioToolsManager:
                 
                 log_callback(f"Processing ({i+1}/{total}): {basename}...")
                 
-                cmd = self._get_ffmpeg_cmd(vid, out_path, extract_mp3, normalize, boost_db, remove_silence, encoder)
+                cmd = self._get_ffmpeg_cmd(vid, out_path, extract_mp3, normalize, peak_db, remove_silence, encoder)
                 
                 try:
                     startupinfo = None
@@ -78,16 +79,18 @@ class AudioToolsManager:
 
                     process = subprocess.Popen(
                         cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
                         startupinfo=startupinfo,
                         creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
                     )
                     
+                    import time
                     while process.poll() is None:
                         if self.stop_requested:
                             process.terminate()
                             break
+                        time.sleep(0.5)
                     
                     if process.returncode != 0 and not self.stop_requested:
                         errored.append(vid)

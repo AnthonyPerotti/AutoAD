@@ -74,7 +74,11 @@ class ResizerView(ctk.CTkFrame):
         self.btn_open_out_dir.pack(side="left", padx=(10, 0))
 
         self.lbl_out_dir = ctk.CTkLabel(self.output_panel, text="Nenhuma pasta selecionada", font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=300)
-        self.lbl_out_dir.pack(pady=(0, 15), padx=15)
+        self.lbl_out_dir.pack(pady=(0, 10), padx=15, anchor="w")
+
+        self.var_open_folder = ctk.BooleanVar(value=True)
+        self.chk_open_folder = ctk.CTkCheckBox(self.output_panel, text="Abrir pasta ao finalizar", variable=self.var_open_folder, font=("Segoe UI", 11))
+        self.chk_open_folder.pack(anchor="w", padx=15, pady=(0, 15))
 
 
         # ============================================
@@ -256,9 +260,10 @@ class ResizerView(ctk.CTkFrame):
 
     def on_finish(self, stopped, errored):
         self.btn_run.configure(
-            text=self.lang.get("start_resizer", "▶ Iniciar Redimensionamento"),
+            text=self.lang.get("start_resizer", "▶ Iniciar"),
             fg_color=COLORS["btn_action"],
-            hover_color=COLORS["btn_action_hover"]
+            hover_color=COLORS["btn_action_hover"],
+            state="normal"
         )
         if stopped:
             self.log(self.lang.get("operation_cancelled", "Operação cancelada."))
@@ -270,6 +275,9 @@ class ResizerView(ctk.CTkFrame):
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
+        
+        if not stopped and self.var_open_folder.get():
+            self.open_output_dir()
 
     def toggle_run(self):
         if self.resizer_manager.is_running:
@@ -349,3 +357,4 @@ class ResizerView(ctk.CTkFrame):
         # Restore selections to new language strings
         self.var_preset.set(lang.get(preset_key, lang.get("val_preset_916")))
         self.var_mode.set(lang.get(mode_key, lang.get("val_mode_blur")))
+        self.chk_open_folder.configure(text=lang.get("open_folder_done", "Abrir pasta ao finalizar"))

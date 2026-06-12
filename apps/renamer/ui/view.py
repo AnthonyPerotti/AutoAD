@@ -31,7 +31,7 @@ class RenamerView(ctk.CTkFrame):
         )
         self.btn_select.pack(side="left", padx=15, pady=15)
         
-        self.lbl_path = ctk.CTkLabel(self.header_frame, text="Nenhuma pasta selecionada", font=("Segoe UI", 12), text_color=COLORS["text_muted"])
+        self.lbl_path = ctk.CTkLabel(self.header_frame, text="Nenhuma pasta selecionada", font=("Segoe UI", 12), text_color=COLORS["text_muted"], anchor="w")
         self.lbl_path.pack(side="left", padx=10, fill="x", expand=True)
 
         # --- RULES PANEL ---
@@ -74,9 +74,13 @@ class RenamerView(ctk.CTkFrame):
         row3 = ctk.CTkFrame(self.rules_frame, fg_color="transparent")
         row3.pack(fill="x", padx=15, pady=(5, 15))
         
-        self.var_numbering = ctk.BooleanVar(value=False)
-        self.chk_numbering = ctk.CTkCheckBox(row3, text="Adicionar numeração (_001)", variable=self.var_numbering, command=self.update_preview)
-        self.chk_numbering.pack(side="left")
+        self.var_num_prefix = ctk.BooleanVar(value=False)
+        self.chk_num_prefix = ctk.CTkCheckBox(row3, text="Sequencial no Prefixo (001_)", variable=self.var_num_prefix, command=self.update_preview)
+        self.chk_num_prefix.pack(side="left", padx=(0, 15))
+
+        self.var_num_suffix = ctk.BooleanVar(value=False)
+        self.chk_num_suffix = ctk.CTkCheckBox(row3, text="Sequencial no Sufixo (_001)", variable=self.var_num_suffix, command=self.update_preview)
+        self.chk_num_suffix.pack(side="left")
         
         self.btn_execute = ctk.CTkButton(
             row3, text="Renomear Arquivos", font=("Segoe UI", 13, "bold"),
@@ -121,8 +125,10 @@ class RenamerView(ctk.CTkFrame):
         name = f"{prefix_val}{name}{suffix_val}"
         
         # 3. Numbering
-        if self.var_numbering.get():
-            num_str = str(index + 1).zfill(3)
+        num_str = str(index + 1).zfill(3)
+        if self.var_num_prefix.get():
+            name = f"{num_str}_{name}"
+        if self.var_num_suffix.get():
             name = f"{name}_{num_str}"
             
         return f"{name}{ext}"
@@ -178,5 +184,6 @@ class RenamerView(ctk.CTkFrame):
         self.lbl_replace.configure(text=lang.get("rn_replace", "Substituir por:"))
         self.lbl_prefix.configure(text=lang.get("rn_prefix", "Prefixo:"))
         self.lbl_suffix.configure(text=lang.get("rn_suffix", "Sufixo:"))
-        self.chk_numbering.configure(text=lang.get("val_mode_seq", "Adicionar numeração (_001)"))
+        self.chk_num_prefix.configure(text=lang.get("val_mode_seq_pref", "Sequencial no Prefixo (001_)"))
+        self.chk_num_suffix.configure(text=lang.get("val_mode_seq_suff", "Sequencial no Sufixo (_001)"))
         self.btn_execute.configure(text=lang.get("start_renamer", "Renomear Arquivos"))

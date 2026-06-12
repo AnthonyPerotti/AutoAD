@@ -72,7 +72,11 @@ class AudioToolsView(ctk.CTkFrame):
         self.btn_open_out_dir.pack(side="left", padx=(10, 0))
 
         self.lbl_out_dir = ctk.CTkLabel(self.output_panel, text="No folder selected", font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=300)
-        self.lbl_out_dir.pack(pady=(0, 15), padx=15)
+        self.lbl_out_dir.pack(pady=(0, 10), padx=15, anchor="w")
+
+        self.var_open_folder = ctk.BooleanVar(value=True)
+        self.chk_open_folder = ctk.CTkCheckBox(self.output_panel, text="Open output folder when done", variable=self.var_open_folder, font=("Segoe UI", 11))
+        self.chk_open_folder.pack(anchor="w", padx=15, pady=(0, 15))
 
         # ============================================
         # RIGHT COLUMN: Options & Log
@@ -85,29 +89,28 @@ class AudioToolsView(ctk.CTkFrame):
         self.options_panel = ctk.CTkFrame(self.right_col, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
         self.options_panel.pack(fill="x", pady=(0, 10))
 
+        row_norm = ctk.CTkFrame(self.options_panel, fg_color="transparent")
+        row_norm.pack(fill="x", padx=20, pady=(20, 10))
+        
         self.var_normalize = ctk.BooleanVar(value=False)
-        self.chk_normalize = ctk.CTkCheckBox(self.options_panel, text="Normalize Volume (-23 LUFS)", variable=self.var_normalize, font=("Segoe UI", 12))
-        self.chk_normalize.pack(anchor="w", padx=20, pady=(20, 10))
+        self.chk_normalize = ctk.CTkCheckBox(row_norm, text="Normalize Peak (dB):", variable=self.var_normalize, font=("Segoe UI", 12))
+        self.chk_normalize.pack(side="left")
+        
+        self.entry_normalize_db = ctk.CTkEntry(row_norm, width=60)
+        self.entry_normalize_db.insert(0, "-1.0")
+        self.entry_normalize_db.pack(side="left", padx=(10, 5))
+        
+        self.lbl_db = ctk.CTkLabel(row_norm, text="dB", font=("Segoe UI", 12))
+        self.lbl_db.pack(side="left")
 
         self.var_silence = ctk.BooleanVar(value=False)
-        self.chk_silence = ctk.CTkCheckBox(self.options_panel, text="Remove Silence", variable=self.var_silence, font=("Segoe UI", 12))
+        self.chk_silence = ctk.CTkCheckBox(self.options_panel, text="Cut Silence", variable=self.var_silence, font=("Segoe UI", 12))
         self.chk_silence.pack(anchor="w", padx=20, pady=10)
 
         self.var_extract = ctk.BooleanVar(value=False)
         self.chk_extract = ctk.CTkCheckBox(self.options_panel, text="Extract as MP3 (Audio Only)", variable=self.var_extract, font=("Segoe UI", 12))
-        self.chk_extract.pack(anchor="w", padx=20, pady=10)
+        self.chk_extract.pack(anchor="w", padx=20, pady=(10, 20))
 
-        # Boost
-        row_boost = ctk.CTkFrame(self.options_panel, fg_color="transparent")
-        row_boost.pack(fill="x", padx=20, pady=(10, 20))
-        
-        self.lbl_boost = ctk.CTkLabel(row_boost, text="Volume Boost (dB):", anchor="w", font=("Segoe UI", 12))
-        self.lbl_boost.pack(side="left")
-        self.entry_boost = ctk.CTkEntry(row_boost, width=60)
-        self.entry_boost.insert(0, "0")
-        self.entry_boost.pack(side="left", padx=10)
-
-        # Status & Run panel
         self.run_panel = ctk.CTkFrame(self.right_col, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
         self.run_panel.pack(fill="both", expand=True)
 
@@ -190,7 +193,8 @@ class AudioToolsView(ctk.CTkFrame):
         self.btn_run.configure(
             text=self.lang.get("start_audio", "▶ Process Audio"),
             fg_color=COLORS["btn_action"],
-            hover_color=COLORS["btn_action_hover"]
+            hover_color=COLORS["btn_action_hover"],
+            state="normal"
         )
         if stopped:
             self.log(self.lang.get("operation_cancelled", "Operation cancelled."))
@@ -203,6 +207,9 @@ class AudioToolsView(ctk.CTkFrame):
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
+        
+        if not stopped and self.var_open_folder.get():
+            self.open_output_dir()
 
     def toggle_run(self):
         if self.audio_manager.is_running:
@@ -228,7 +235,7 @@ class AudioToolsView(ctk.CTkFrame):
         self.audio_manager.process_batch(
             self.input_videos, self.output_dir,
             self.var_extract.get(), self.var_normalize.get(),
-            self.entry_boost.get(), self.var_silence.get(),
+            self.entry_normalize_db.get(), self.var_silence.get(),
             self.hub.encoder_var.get(),
             self.log, self.update_progress, self.on_finish
         )
@@ -248,7 +255,7 @@ class AudioToolsView(ctk.CTkFrame):
         else:
             self.btn_run.configure(text=lang.get("cancel", "⏹ Cancel"))
             
-        self.chk_normalize.configure(text=lang.get("aud_normalize", "Normalize Volume (-23 LUFS)"))
-        self.chk_silence.configure(text=lang.get("aud_silence", "Remove Silence"))
+        self.chk_normalize.configure(text=lang.get("aud_normalize", "Normalize Peak (dB):"))
+        self.chk_silence.configure(text=lang.get("aud_silence", "Cut Silence"))
         self.chk_extract.configure(text=lang.get("aud_extract", "Extract as MP3 (Audio Only)"))
-        self.lbl_boost.configure(text=lang.get("aud_boost", "Volume Boost (dB):"))
+        self.chk_open_folder.configure(text=lang.get("open_folder_done", "Open output folder when done"))

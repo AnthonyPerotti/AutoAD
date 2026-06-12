@@ -10,7 +10,9 @@ from core.utils import get_resource_path
 from apps.assembler.ui.view import AssemblerView
 from apps.resizer.ui.view import ResizerView
 from apps.renamer.ui.view import RenamerView
-from apps.watermark.ui.view import WatermarkView
+from apps.converter.ui.view import ConverterView
+from apps.audio_tools.ui.view import AudioToolsView
+from apps.subtitles.ui.view import SubtitlesView
 from ui.placeholder import PlaceholderModuleView
 
 ctk.set_appearance_mode("dark")
@@ -22,8 +24,7 @@ MODULES = [
     ("assembler", "📦", "Content Assembler", "Content Assembler", False),
     ("resizer", "🖼", "Video Resizer", "Video Resizer", False),
     ("subtitles", "📝", "Subtitle Studio", "Subtitle Studio", False),
-    ("exporter", "📤", "Social Export Manager", "Social Export Manager", False),
-    ("watermark", "💧", "Video Watermarker", "Video Watermarker", False),
+    ("converter", "🔄", "Video Converter", "Video Converter", False),
     ("audio_tools", "🎵", "Audio Toolkit", "Audio Toolkit", False),
     ("renamer", "🏷", "Bulk Renamer", "Bulk Renamer", False),
 ]
@@ -111,7 +112,7 @@ class AutoADSuiteApp(ctk.CTk):
         self.ui_scale_var = ctk.StringVar(value="100%")
         self.overwrite_var = ctk.StringVar(value="Ask")
 
-        self.title("AutoAD Suite v2.0")
+        self.title("AutoAD Suite v2.1")
         self.geometry("980x950")
         self.minsize(900, 800)
 
@@ -306,7 +307,7 @@ class AutoADSuiteApp(ctk.CTk):
         self.badge_frame = ctk.CTkFrame(self.title_row, fg_color=COLORS["hook"], corner_radius=6, height=20, width=40)
         self.badge_frame.pack(side="left", padx=(8, 0))
         self.badge_frame.pack_propagate(False)
-        self.badge_lbl = ctk.CTkLabel(self.badge_frame, text="v2.0", font=("Segoe UI", 10, "bold"), text_color=COLORS["text_main"])
+        self.badge_lbl = ctk.CTkLabel(self.badge_frame, text="v2.1", font=("Segoe UI", 10, "bold"), text_color=COLORS["text_main"])
         self.badge_lbl.place(relx=0.5, rely=0.5, anchor="center")
 
         self.subtitle_label = ctk.CTkLabel(
@@ -317,16 +318,28 @@ class AutoADSuiteApp(ctk.CTk):
         )
         self.subtitle_label.pack(anchor="w", pady=(3, 0))
 
+        # Header right container
+        self.header_right_container = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        self.header_right_container.pack(side="right", fill="y", padx=(0, 5))
+
+        # Github link top right
+        import webbrowser
+        self.dev_link = ctk.CTkLabel(
+            self.header_right_container, text="developed by Anthony Perotti", font=("Segoe UI", 11, "italic"), text_color=COLORS["text_muted"], cursor="hand2"
+        )
+        self.dev_link.pack(side="top", anchor="e", pady=(0, 2))
+        self.dev_link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/AnthonyPerotti"))
+
         # Status badge on right side of header
         self.status_pill_frame = ctk.CTkFrame(
-            self.header_frame,
+            self.header_right_container,
             fg_color=COLORS["bg_panel"],
             border_width=SIZES["border_thin"],
             border_color=COLORS["border"],
             height=30,
             corner_radius=15
         )
-        self.status_pill_frame.pack(side="right", padx=(10, 5))
+        self.status_pill_frame.pack(side="top", anchor="e")
         self.status_pill_frame.pack_propagate(False)
 
         self.status_dot_lbl = ctk.CTkLabel(self.status_pill_frame, text="●", text_color=COLORS["success"], font=("Segoe UI", 12))
@@ -350,10 +363,9 @@ class AutoADSuiteApp(ctk.CTk):
         from apps.assembler.ui.view import AssemblerView
         from apps.renamer.ui.view import RenamerView
         from apps.resizer.ui.view import ResizerView
-        from apps.watermark.ui.view import WatermarkView
         from apps.subtitles.ui.view import SubtitlesView
         from apps.audio_tools.ui.view import AudioToolsView
-        from apps.exporter.ui.view import ExporterView
+        from apps.converter.ui.view import ConverterView
 
         self.assembler_view = AssemblerView(self.view_container, self)
         self.assembler_view.pack(fill="both", expand=True)
@@ -369,14 +381,12 @@ class AutoADSuiteApp(ctk.CTk):
                 self.module_views[key] = RenamerView(self.view_container, self)
             elif key == "resizer":
                 self.module_views[key] = ResizerView(self.view_container, self)
-            elif key == "watermark":
-                self.module_views[key] = WatermarkView(self.view_container, self)
             elif key == "subtitles":
                 self.module_views[key] = SubtitlesView(self.view_container, self)
             elif key == "audio_tools":
                 self.module_views[key] = AudioToolsView(self.view_container, self)
-            elif key == "exporter":
-                self.module_views[key] = ExporterView(self.view_container, self)
+            elif key == "converter":
+                self.module_views[key] = ConverterView(self.view_container, self)
 
         # Dashboard
         self.dashboard_view = ctk.CTkFrame(self.view_container, fg_color="transparent")
@@ -396,7 +406,7 @@ class AutoADSuiteApp(ctk.CTk):
 
         self.footer_version_label = ctk.CTkLabel(
             self.footer_frame,
-            text="AutoAD Suite v2.0",
+            text="AutoAD Suite v2.1",
             font=("Segoe UI", 10),
             text_color=COLORS["text_muted"]
         )

@@ -5,9 +5,9 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from core.theme import COLORS, FONTS, SIZES
 from core.ui_utils import AutoScrollableFrame
-from apps.watermark.renderer import WatermarkManager
+from apps.converter.renderer import ConverterManager
 
-class WatermarkView(ctk.CTkFrame):
+class ConverterView(ctk.CTkFrame):
     def __init__(self, parent, hub):
         super().__init__(parent, fg_color="transparent")
         self.hub = hub
@@ -15,9 +15,8 @@ class WatermarkView(ctk.CTkFrame):
         self.output_dir = ""
         self.watermark_image_path = ""
         self.custom_font_path = ""
-        self.watermark_manager = WatermarkManager()
+        self.converter_manager = ConverterManager()
 
-        # Add Scrollable wrapper
         self.scroll_frame = AutoScrollableFrame(self, fg_color="transparent")
         self.scroll_frame.pack(fill="both", expand=True)
         
@@ -76,130 +75,131 @@ class WatermarkView(ctk.CTkFrame):
         self.btn_open_out_dir.pack(side="left", padx=(10, 0))
 
         self.lbl_out_dir = ctk.CTkLabel(self.output_panel, text="No folder selected", font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=300)
-        self.lbl_out_dir.pack(pady=(0, 15), padx=15)
+        self.lbl_out_dir.pack(pady=(0, 10), padx=15, anchor="w")
+
+        self.var_open_folder = ctk.BooleanVar(value=True)
+        self.chk_open_folder = ctk.CTkCheckBox(self.output_panel, text="Abrir pasta ao finalizar", variable=self.var_open_folder, font=("Segoe UI", 11))
+        self.chk_open_folder.pack(anchor="w", padx=15, pady=(0, 15))
 
         # ============================================
-        # RIGHT COLUMN: Options & Log
+        # RIGHT COLUMN: Options
         # ============================================
         self.right_col = ctk.CTkFrame(self.scroll_frame, fg_color="transparent")
         self.right_col.grid(row=0, column=1, sticky="nsew", padx=(10, 20), pady=10)
-        self.right_col.grid_rowconfigure(2, weight=1)
-
-        # Options panel
-        self.options_panel = ctk.CTkFrame(self.right_col, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
-        self.options_panel.pack(fill="x", pady=(0, 10))
-
-        # Type Selection (Imagem / Texto)
-        self.row_type = ctk.CTkFrame(self.options_panel, fg_color="transparent")
-        self.row_type.pack(fill="x", padx=15, pady=(15, 5))
         
+        # EXPORT OPTIONS
+        self.export_panel = ctk.CTkFrame(self.right_col, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
+        self.export_panel.pack(fill="x", pady=(0, 10))
+        
+        self.lbl_presets = ctk.CTkLabel(self.export_panel, text="Formatos de Saída:", font=("Segoe UI", 14, "bold"), text_color=COLORS["text_main"])
+        self.lbl_presets.pack(anchor="w", padx=20, pady=(15, 5))
+
+        # Checkboxes for formats
+        formats_row = ctk.CTkFrame(self.export_panel, fg_color="transparent")
+        formats_row.pack(fill="x", padx=15)
+        
+        self.var_tiktok = ctk.BooleanVar(value=True)
+        ctk.CTkCheckBox(formats_row, text="TikTok", variable=self.var_tiktok).pack(side="left", padx=5, pady=5)
+        self.var_shorts = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(formats_row, text="Shorts", variable=self.var_shorts).pack(side="left", padx=5, pady=5)
+        self.var_reels = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(formats_row, text="Reels", variable=self.var_reels).pack(side="left", padx=5, pady=5)
+        self.var_youtube = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(formats_row, text="YouTube", variable=self.var_youtube).pack(side="left", padx=5, pady=5)
+
+        self.var_custom = ctk.BooleanVar(value=False)
+        self.chk_custom = ctk.CTkCheckBox(self.export_panel, text="Resolução Customizada", variable=self.var_custom, command=self.on_custom_toggle)
+        self.chk_custom.pack(anchor="w", padx=20, pady=10)
+
+        self.custom_frame = ctk.CTkFrame(self.export_panel, fg_color="transparent")
+        
+        c_row1 = ctk.CTkFrame(self.custom_frame, fg_color="transparent")
+        c_row1.pack(fill="x", pady=2)
+        ctk.CTkLabel(c_row1, text="Resolução (LxA):").pack(side="left")
+        self.entry_custom_res = ctk.CTkEntry(c_row1, width=100)
+        self.entry_custom_res.insert(0, "1080x1920")
+        self.entry_custom_res.pack(side="left", padx=10)
+
+        c_row2 = ctk.CTkFrame(self.custom_frame, fg_color="transparent")
+        c_row2.pack(fill="x", pady=2)
+        ctk.CTkLabel(c_row2, text="FPS:").pack(side="left")
+        self.entry_custom_fps = ctk.CTkEntry(c_row2, width=60)
+        self.entry_custom_fps.insert(0, "60")
+        self.entry_custom_fps.pack(side="left", padx=10)
+        
+        ctk.CTkLabel(c_row2, text="Bitrate:").pack(side="left")
+        self.entry_custom_bitrate = ctk.CTkEntry(c_row2, width=80)
+        self.entry_custom_bitrate.insert(0, "10M")
+        self.entry_custom_bitrate.pack(side="left", padx=10)
+
+        # WATERMARK OPTIONS
+        self.wm_panel = ctk.CTkFrame(self.right_col, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
+        self.wm_panel.pack(fill="x", pady=(0, 10))
+
+        self.var_wm_enabled = ctk.BooleanVar(value=False)
+        self.chk_wm_enabled = ctk.CTkCheckBox(self.wm_panel, text="Adicionar Marca D'água", font=("Segoe UI", 14, "bold"), variable=self.var_wm_enabled, command=self.on_wm_toggle)
+        self.chk_wm_enabled.pack(anchor="w", padx=20, pady=(15, 10))
+
+        self.wm_options_frame = ctk.CTkFrame(self.wm_panel, fg_color="transparent")
+        
+        self.row_type = ctk.CTkFrame(self.wm_options_frame, fg_color="transparent")
+        self.row_type.pack(fill="x", padx=15, pady=(5, 5))
         self.var_type = ctk.StringVar(value="val_img")
-        self.rb_img = ctk.CTkRadioButton(self.row_type, text="🖼 Image", variable=self.var_type, value="val_img", command=self.on_type_change, font=("Segoe UI", 12, "bold"), text_color=COLORS["text_main"])
+        self.rb_img = ctk.CTkRadioButton(self.row_type, text="🖼 Image", variable=self.var_type, value="val_img", command=self.on_type_change)
         self.rb_img.pack(side="left", padx=(0, 15))
-        self.rb_text = ctk.CTkRadioButton(self.row_type, text="🔤 Text", variable=self.var_type, value="val_text", command=self.on_type_change, font=("Segoe UI", 12, "bold"), text_color=COLORS["text_main"])
+        self.rb_text = ctk.CTkRadioButton(self.row_type, text="🔤 Text", variable=self.var_type, value="val_text", command=self.on_type_change)
         self.rb_text.pack(side="left", padx=(0, 15))
-        self.rb_both = ctk.CTkRadioButton(self.row_type, text="🖼 + 🔤 Both", variable=self.var_type, value="val_both", command=self.on_type_change, font=("Segoe UI", 12, "bold"), text_color=COLORS["text_main"])
-        self.rb_both.pack(side="left")
 
-        # --- HYBRID LAYOUT OPTIONS ---
-        self.hybrid_frame = ctk.CTkFrame(self.options_panel, fg_color="transparent")
-        
-        row_h1 = ctk.CTkFrame(self.hybrid_frame, fg_color="transparent")
-        row_h1.pack(fill="x", pady=0)
-        self.lbl_wm_pos_txt = ctk.CTkLabel(row_h1, text="Text Position:", width=100, anchor="w", font=("Segoe UI", 11))
-        self.lbl_wm_pos_txt.pack(side="left", padx=(0, 10))
-        self.var_hybrid_layout = ctk.StringVar(value="Text Below Image")
-        self.menu_hybrid = ctk.CTkOptionMenu(
-            row_h1, variable=self.var_hybrid_layout,
-            values=["Text Below Image", "Text Above Image", "Text on Right", "Text on Left"],
-            command=self.update_align_options
-        )
-        self.menu_hybrid.pack(side="left", fill="x", expand=True)
-
-        # --- IMAGE OPTIONS ---
-        self.img_frame = ctk.CTkFrame(self.options_panel, fg_color="transparent")
-        
+        self.img_frame = ctk.CTkFrame(self.wm_options_frame, fg_color="transparent")
         self.btn_sel_image = ctk.CTkButton(self.img_frame, text="Select Logo", fg_color=COLORS["hook"], hover_color=COLORS["export_btn_hover"], command=self.select_image)
-        self.btn_sel_image.pack(pady=(5, 5), anchor="w")
-        
-        self.lbl_image = ctk.CTkLabel(self.img_frame, text="No image selected", font=("Segoe UI", 11), text_color=COLORS["text_muted"])
-        self.lbl_image.pack(pady=(0, 5), anchor="w")
+        self.btn_sel_image.pack(pady=5, anchor="w")
+        self.lbl_image = ctk.CTkLabel(self.img_frame, text="No image selected", text_color=COLORS["text_muted"])
+        self.lbl_image.pack(anchor="w")
 
-        # --- TEXT OPTIONS ---
-        self.txt_frame = ctk.CTkFrame(self.options_panel, fg_color="transparent")
+        self.txt_frame = ctk.CTkFrame(self.wm_options_frame, fg_color="transparent")
+        self.entry_text = ctk.CTkTextbox(self.txt_frame, height=60, fg_color=COLORS["bg_main"], text_color=COLORS["text_main"])
+        self.entry_text.insert("0.0", "Watermark text...")
+        self.entry_text.pack(fill="x", pady=5)
         
-        row_txt1 = ctk.CTkFrame(self.txt_frame, fg_color="transparent")
-        row_txt1.pack(fill="x", pady=5)
-        self.entry_text = ctk.CTkTextbox(row_txt1, height=60, fg_color=COLORS["bg_main"], text_color=COLORS["text_main"])
-        self.entry_text.insert("0.0", "Type your watermark...")
-        self.entry_text.pack(side="left", fill="x", expand=True, padx=(0, 10))
-        self.entry_color = ctk.CTkEntry(row_txt1, width=80, placeholder_text="HEX Color")
+        t_row = ctk.CTkFrame(self.txt_frame, fg_color="transparent")
+        t_row.pack(fill="x")
+        self.entry_color = ctk.CTkEntry(t_row, width=80, placeholder_text="HEX (#FFFFFF)")
         self.entry_color.insert(0, "#FFFFFF")
-        self.entry_color.pack(side="left")
+        self.entry_color.pack(side="left", padx=(0, 10))
 
-        row_txt_align = ctk.CTkFrame(self.txt_frame, fg_color="transparent")
-        row_txt_align.pack(fill="x", pady=5)
-        self.lbl_wm_align = ctk.CTkLabel(row_txt_align, text="Alignment:", width=100, anchor="w", font=("Segoe UI", 11))
-        self.lbl_wm_align.pack(side="left")
-        self.var_hybrid_align = ctk.StringVar(value="Center")
-        self.menu_align = ctk.CTkOptionMenu(
-            row_txt_align, variable=self.var_hybrid_align,
-            values=["Left", "Center", "Right"]
-        )
-        self.menu_align.pack(side="left", fill="x", expand=True)
-
-        row_txt2 = ctk.CTkFrame(self.txt_frame, fg_color="transparent")
-        row_txt2.pack(fill="x", pady=5)
-        self.lbl_wm_font = ctk.CTkLabel(row_txt2, text="Font:", width=100, anchor="w", font=("Segoe UI", 11))
-        self.lbl_wm_font.pack(side="left")
-        
-        # Load fonts
         self.fonts_list = self.load_system_fonts()
         self.var_font = ctk.StringVar(value="Arial" if "Arial" in self.fonts_list else self.fonts_list[0] if self.fonts_list else "None")
-        self.menu_font = ctk.CTkOptionMenu(row_txt2, variable=self.var_font, values=self.fonts_list + ["Browse Custom..."], command=self.on_font_change)
+        self.menu_font = ctk.CTkOptionMenu(t_row, variable=self.var_font, values=self.fonts_list + ["Browse Custom..."], command=self.on_font_change)
         self.menu_font.pack(side="left", fill="x", expand=True)
 
-        # --- COMMON OPTIONS (Scale, Opacity) ---
-        row_common = ctk.CTkFrame(self.options_panel, fg_color="transparent")
+        row_common = ctk.CTkFrame(self.wm_options_frame, fg_color="transparent")
         row_common.pack(fill="x", padx=15, pady=5)
-        
-        self.lbl_wm_size = ctk.CTkLabel(row_common, text="Size (%):", width=80, anchor="w", font=("Segoe UI", 11))
-        self.lbl_wm_size.pack(side="left")
-        self.entry_scale = ctk.CTkEntry(row_common, width=60)
+        ctk.CTkLabel(row_common, text="Size (%):", width=60, anchor="w").pack(side="left")
+        self.entry_scale = ctk.CTkEntry(row_common, width=50)
         self.entry_scale.insert(0, "20")
         self.entry_scale.pack(side="left", padx=(0, 15))
-        
-        self.lbl_wm_opacity = ctk.CTkLabel(row_common, text="Opacity (%):", width=90, anchor="w", font=("Segoe UI", 11))
-        self.lbl_wm_opacity.pack(side="left")
-        self.entry_opacity = ctk.CTkEntry(row_common, width=60)
+        ctk.CTkLabel(row_common, text="Opacity (%):", width=70, anchor="w").pack(side="left")
+        self.entry_opacity = ctk.CTkEntry(row_common, width=50)
         self.entry_opacity.insert(0, "100")
         self.entry_opacity.pack(side="left")
 
-        # --- POSITION ---
-        row_pos = ctk.CTkFrame(self.options_panel, fg_color="transparent")
-        row_pos.pack(fill="x", padx=15, pady=(5, 15))
-        
-        self.lbl_wm_position = ctk.CTkLabel(row_pos, text="Position:", width=60, anchor="w", font=("Segoe UI", 11))
-        self.lbl_wm_position.pack(side="left")
+        row_pos = ctk.CTkFrame(self.wm_options_frame, fg_color="transparent")
+        row_pos.pack(fill="x", padx=15, pady=5)
+        ctk.CTkLabel(row_pos, text="Position:", width=60, anchor="w").pack(side="left")
         self.var_pos = ctk.StringVar(value="Bottom Right")
         self.menu_pos = ctk.CTkOptionMenu(
             row_pos, variable=self.var_pos,
-            values=[
-                "Top Left", "Top Right", 
-                "Bottom Left", "Bottom Right", 
-                "Center", "DVD Bouncing"
-            ],
+            values=["Top Left", "Top Right", "Bottom Left", "Bottom Right", "Center", "DVD Bouncing"],
             command=self.on_pos_change
         )
-        self.menu_pos.pack(side="left", padx=(5, 15))
-        
-        self.lbl_margin = ctk.CTkLabel(row_pos, text="Margin (px):", width=70, anchor="w", font=("Segoe UI", 11))
+        self.menu_pos.pack(side="left", padx=(0, 15))
+        self.lbl_margin = ctk.CTkLabel(row_pos, text="Margin:", width=50, anchor="w")
         self.lbl_margin.pack(side="left")
-        self.entry_margin = ctk.CTkEntry(row_pos, width=60)
+        self.entry_margin = ctk.CTkEntry(row_pos, width=50)
         self.entry_margin.insert(0, "20")
         self.entry_margin.pack(side="left")
 
-        # Status & Run panel
+        # RUN PANEL
         self.run_panel = ctk.CTkFrame(self.right_col, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
         self.run_panel.pack(fill="both", expand=True)
 
@@ -218,7 +218,7 @@ class WatermarkView(ctk.CTkFrame):
         self.lbl_encoder.pack(side="left")
 
         self.btn_run = ctk.CTkButton(
-            row_bottom, text="▶ Start Watermark", font=("Segoe UI", 13, "bold"),
+            row_bottom, text="▶ Converter / Exportar", font=("Segoe UI", 13, "bold"),
             fg_color=COLORS["btn_action"], hover_color=COLORS["btn_action_hover"], text_color=COLORS["text_main"],
             width=200,
             command=self.toggle_run
@@ -229,12 +229,17 @@ class WatermarkView(ctk.CTkFrame):
         self.hub.encoder_var.trace_add("write", lambda *args: self.update_encoder_label())
         
         self.lang = {}
-        self.on_type_change() # Init layout
+        self.on_type_change()
+        self.on_custom_toggle()
+        self.on_wm_toggle()
 
     def get_key_for_val(self, val, prefix):
-        for k, v in self.lang.items():
-            if v == val and k.startswith(prefix): return k
-        if prefix == "val_t": return "val_tb"
+        if val == "Top Left": return "val_pos_tl"
+        if val == "Top Right": return "val_pos_tr"
+        if val == "Bottom Left": return "val_pos_bl"
+        if val == "Bottom Right": return "val_pos_br"
+        if val == "Center": return "val_center"
+        if val == "DVD Bouncing": return "val_dvd"
         if prefix == "val_pos_": return "val_pos_br"
         if prefix == "val_": return "val_center"
         return val
@@ -242,21 +247,19 @@ class WatermarkView(ctk.CTkFrame):
     def load_system_fonts(self):
         self.system_fonts_paths = {}
         try:
-            # Load basic TTF fonts from Windows
             for f in glob.glob("C:/Windows/Fonts/*.ttf"):
                 basename = os.path.basename(f).replace(".ttf", "")
                 if basename.isalpha() or " " in basename:
                     self.system_fonts_paths[basename] = f
         except:
             pass
-        return sorted(list(self.system_fonts_paths.keys()))[:50] # Top 50 to avoid lag
+        return sorted(list(self.system_fonts_paths.keys()))[:50]
 
     def on_font_change(self, val):
         if val == self.lang.get("wm_browse_font", "Browse Custom..."):
             f = filedialog.askopenfilename(title="Select Font", filetypes=[("Font Files", "*.ttf *.otf")])
             if f:
                 self.custom_font_path = f
-                # Add it to the menu temporarily
                 name = os.path.basename(f)
                 self.var_font.set(name)
             else:
@@ -271,36 +274,27 @@ class WatermarkView(ctk.CTkFrame):
             self.lbl_margin.pack(side="left")
             self.entry_margin.pack(side="left")
 
-    def update_align_options(self, val):
-        key = self.get_key_for_val(val, "val_t")
-        if key in ("val_tr", "val_tl"):
-            self.menu_align.configure(values=[self.lang.get("val_top", "Top"), self.lang.get("val_center", "Center"), self.lang.get("val_bottom", "Bottom")])
-            current_align_key = self.get_key_for_val(self.var_hybrid_align.get(), "val_")
-            if current_align_key not in ["val_top", "val_center", "val_bottom"]:
-                self.var_hybrid_align.set(self.lang.get("val_center", "Center"))
-        else:
-            self.menu_align.configure(values=[self.lang.get("val_left", "Left"), self.lang.get("val_center", "Center"), self.lang.get("val_right", "Right")])
-            current_align_key = self.get_key_for_val(self.var_hybrid_align.get(), "val_")
-            if current_align_key not in ["val_left", "val_center", "val_right"]:
-                self.var_hybrid_align.set(self.lang.get("val_center", "Center"))
-
     def on_type_change(self):
         t = self.var_type.get()
         self.txt_frame.pack_forget()
         self.img_frame.pack_forget()
-        self.hybrid_frame.pack_forget()
         
-        last_frame = self.row_type
-        if t in ("val_img", "val_both"):
-            self.img_frame.pack(fill="x", padx=15, pady=5, after=last_frame)
-            last_frame = self.img_frame
-            
-        if t in ("val_text", "val_both"):
-            self.txt_frame.pack(fill="x", padx=15, pady=5, after=last_frame)
-            last_frame = self.txt_frame
-            
-        if t == "val_both":
-            self.hybrid_frame.pack(fill="x", padx=15, pady=5, after=last_frame)
+        if t == "val_img":
+            self.img_frame.pack(fill="x", padx=15, pady=5, after=self.row_type)
+        if t == "val_text":
+            self.txt_frame.pack(fill="x", padx=15, pady=5, after=self.row_type)
+
+    def on_custom_toggle(self):
+        if self.var_custom.get():
+            self.custom_frame.pack(fill="x", padx=40, pady=5)
+        else:
+            self.custom_frame.pack_forget()
+
+    def on_wm_toggle(self):
+        if self.var_wm_enabled.get():
+            self.wm_options_frame.pack(fill="x")
+        else:
+            self.wm_options_frame.pack_forget()
 
     def select_image(self):
         f = filedialog.askopenfilename(title=self.lang.get("wm_select_logo", "Select Logo"), filetypes=[("Images", "*.png *.jpg *.jpeg *.webp")])
@@ -358,25 +352,28 @@ class WatermarkView(ctk.CTkFrame):
 
     def on_finish(self, stopped, errored):
         self.btn_run.configure(
-            text=self.lang.get("start_watermark", "▶ Start Watermark"),
+            text=self.lang.get("start_converter", "▶ Converter / Exportar"),
             fg_color=COLORS["btn_action"],
-            hover_color=COLORS["btn_action_hover"]
+            hover_color=COLORS["btn_action_hover"],
+            state="normal"
         )
         if stopped:
             self.log(self.lang.get("operation_cancelled", "Operation cancelled."))
         else:
-            success = len(self.input_videos) - len(errored)
-            self.log(self.lang.get("done", "Done! {} videos processed.").format(success))
+            self.log(self.lang.get("done", "Done!"))
             if errored:
-                self.log(self.lang.get("errors_found", "Errors in {} videos.").format(len(errored)))
+                self.log(self.lang.get("errors_found", "Errors in some tasks."))
         
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
+        
+        if not stopped and self.var_open_folder.get():
+            self.open_output_dir()
 
     def toggle_run(self):
-        if self.watermark_manager.is_running:
-            self.watermark_manager.stop()
+        if self.converter_manager.is_running:
+            self.converter_manager.stop()
             self.btn_run.configure(state="disabled")
             return
 
@@ -387,39 +384,52 @@ class WatermarkView(ctk.CTkFrame):
             messagebox.showwarning("Warning", self.lang.get("select_output_first", "Select an output folder."))
             return
 
-        t = self.var_type.get()
-        text_val = self.entry_text.get("0.0", "end").strip()
-        default_txt = self.lang.get("wm_type_here", "Type your watermark...")
-        if text_val == default_txt:
-            text_val = ""
+        selected_presets = []
+        if self.var_tiktok.get(): selected_presets.append("tiktok")
+        if self.var_shorts.get(): selected_presets.append("shorts")
+        if self.var_reels.get(): selected_presets.append("reels")
+        if self.var_youtube.get(): selected_presets.append("youtube")
 
-        if t in ("val_img", "val_both") and not self.watermark_image_path:
-            messagebox.showwarning("Warning", self.lang.get("wm_no_image", "No image"))
-            return
-        if t in ("val_text", "val_both") and not text_val:
-            messagebox.showwarning("Warning", "Type the watermark text.")
+        custom_settings = {}
+        if self.var_custom.get():
+            res = self.entry_custom_res.get()
+            if "x" not in res:
+                messagebox.showwarning("Warning", "Invalid custom resolution format (e.g., 1080x1920).")
+                return
+            selected_presets.append("custom")
+            custom_settings = {
+                "res": res,
+                "fps": self.entry_custom_fps.get(),
+                "bitrate": self.entry_custom_bitrate.get()
+            }
+
+        if not selected_presets:
+            messagebox.showwarning("Warning", "Select at least one format to export.")
             return
 
         font_name = self.var_font.get()
-        if font_name == self.lang.get("wm_browse_font", "Browse Custom...") or font_name == os.path.basename(self.custom_font_path):
-            actual_font_path = self.custom_font_path
-        else:
-            actual_font_path = self.system_fonts_paths.get(font_name, "")
-
-        data = {
-            "type": t,
-            "layout_hybrid": self.get_key_for_val(self.var_hybrid_layout.get(), "val_t"),
-            "layout_align": self.get_key_for_val(self.var_hybrid_align.get(), "val_"),
+        actual_font_path = self.custom_font_path if font_name == self.lang.get("wm_browse_font", "Browse Custom...") else self.system_fonts_paths.get(font_name, "")
+        
+        watermark_data = {
+            "enabled": self.var_wm_enabled.get(),
+            "type": self.var_type.get(),
             "image_path": self.watermark_image_path,
-            "text": text_val,
+            "text": self.entry_text.get("0.0", "end").strip(),
             "text_color": self.entry_color.get() or "#FFFFFF",
             "font_path": actual_font_path,
             "scale": self.entry_scale.get() or "20",
             "opacity": self.entry_opacity.get() or "100",
             "position": self.get_key_for_val(self.var_pos.get(), "val_pos_"),
             "margin": self.entry_margin.get() or "20",
-            "encoder": self.hub.encoder_var.get()
         }
+
+        if watermark_data["enabled"]:
+            if watermark_data["type"] == "val_img" and not watermark_data["image_path"]:
+                messagebox.showwarning("Warning", self.lang.get("wm_no_image", "No image selected."))
+                return
+            if watermark_data["type"] == "val_text" and not watermark_data["text"]:
+                messagebox.showwarning("Warning", "Type the watermark text.")
+                return
 
         self.btn_run.configure(
             text=self.lang.get("cancel", "⏹ Cancel"),
@@ -429,70 +439,29 @@ class WatermarkView(ctk.CTkFrame):
         self.progress_bar.configure(mode="indeterminate")
         self.progress_bar.start()
 
-        self.watermark_manager.process_batch(
-            self.input_videos, self.output_dir, data,
+        self.converter_manager.process_batch(
+            self.input_videos, self.output_dir,
+            selected_presets, custom_settings,
+            self.hub.encoder_var.get(), watermark_data,
             self.log, self.update_progress, self.on_finish
         )
 
     def update_language(self, lang):
-        old_lang = self.lang if self.lang else lang
         self.lang = lang
-        
-        # Save keys for dropdowns
-        hybrid_layout_key = self.get_key_for_val(self.var_hybrid_layout.get(), "val_t")
-        align_key = self.get_key_for_val(self.var_hybrid_align.get(), "val_")
-        pos_key = self.get_key_for_val(self.var_pos.get(), "val_pos_")
-        
-        # Buttons / Labels
         self.btn_add_videos.configure(text=lang.get("add_videos", "➕ Add Videos"))
         self.btn_clear_videos.configure(text=lang.get("clear_list", "Clear List"))
         self.btn_out_dir.configure(text=lang.get("output_folder", "📂 Output Folder"))
         self.btn_open_out_dir.configure(text=lang.get("open", "Open"))
+        
         if not self.output_dir:
             self.lbl_out_dir.configure(text=lang.get("no_folder_selected", "No folder selected"))
             
-        if not self.watermark_manager.is_running:
-            self.btn_run.configure(text=lang.get("start_watermark", "▶ Start Watermark"))
+        if not self.converter_manager.is_running:
+            self.btn_run.configure(text=lang.get("start_converter", "▶ Converter / Exportar"))
         else:
             self.btn_run.configure(text=lang.get("cancel", "⏹ Cancel"))
             
-        self.rb_img.configure(text=lang.get("wm_type_img", "🖼 Image"))
-        self.rb_text.configure(text=lang.get("wm_type_text", "🔤 Text"))
-        self.rb_both.configure(text=lang.get("wm_type_both", "🖼 + 🔤 Both"))
-        
-        self.lbl_wm_pos_txt.configure(text=lang.get("wm_pos_txt", "Text Position:"))
-        self.lbl_wm_align.configure(text=lang.get("wm_align", "Alignment:"))
-        self.btn_sel_image.configure(text=lang.get("wm_select_logo", "Select Logo"))
-        if not self.watermark_image_path:
-            self.lbl_image.configure(text=lang.get("wm_no_image", "No image"))
-        
-        if self.entry_text.get("0.0", "end").strip() == old_lang.get("wm_type_here", "Type your watermark..."):
-            self.entry_text.delete("0.0", "end")
-            self.entry_text.insert("0.0", lang.get("wm_type_here", "Type your watermark..."))
-            
-        self.entry_color.configure(placeholder_text=lang.get("wm_hex", "HEX Color"))
-        self.lbl_wm_font.configure(text=lang.get("wm_font", "Font:"))
-        self.lbl_wm_size.configure(text=lang.get("wm_size", "Size (%):"))
-        self.lbl_wm_opacity.configure(text=lang.get("wm_opacity", "Opacity (%):"))
-        self.lbl_wm_position.configure(text=lang.get("wm_position", "Position:"))
-        self.lbl_margin.configure(text=lang.get("wm_margin", "Margin (px):"))
-        
-        # Dropdowns
-        self.menu_hybrid.configure(values=[
-            lang.get("val_tb"), lang.get("val_ta"), lang.get("val_tr"), lang.get("val_tl")
-        ])
-        self.menu_pos.configure(values=[
-            lang.get("val_pos_tl"), lang.get("val_pos_tr"), 
-            lang.get("val_pos_bl"), lang.get("val_pos_br"), 
-            lang.get("val_center"), lang.get("val_dvd")
-        ])
-        
-        # Update align options properly based on current hybrid layout
-        self.update_align_options(lang.get(hybrid_layout_key))
-        
-        self.menu_font.configure(values=self.fonts_list + [lang.get("wm_browse_font", "Browse Custom...")])
-        
-        # Restore selections
-        self.var_hybrid_layout.set(lang.get(hybrid_layout_key, lang.get("val_tb")))
-        self.var_hybrid_align.set(lang.get(align_key, lang.get("val_center")))
-        self.var_pos.set(lang.get(pos_key, lang.get("val_pos_br")))
+        self.lbl_presets.configure(text=lang.get("exp_select", "Formatos de Saída:"))
+        self.chk_custom.configure(text=lang.get("exp_custom", "Resolução Customizada"))
+        self.chk_wm_enabled.configure(text=lang.get("wm_enable", "Adicionar Marca D'água"))
+        self.chk_open_folder.configure(text=lang.get("open_folder_done", "Abrir pasta ao finalizar"))

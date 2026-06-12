@@ -1,7 +1,7 @@
 translations = {
     "Português": {
         # Global
-        "title": "AutoAD Suite v2.0",
+        "title": "AutoAD Suite v2.1",
         "add_videos": "➕ Adicionar Vídeos",
         "clear_list": "Limpar Lista",
         "output_folder": "📂 Pasta de Saída",
@@ -143,7 +143,7 @@ translations = {
         
         # Audio Tools
         "start_audio": "▶ Processar Áudio",
-        "aud_normalize": "Normalizar Volume (-23 LUFS)",
+        "aud_normalize": "Normalizar Pico (dB):",
         "aud_silence": "Remover Silêncio",
         "aud_extract": "Extrair para MP3 (Apenas Áudio)",
         "aud_boost": "Aumentar Volume (dB):",
@@ -155,7 +155,7 @@ translations = {
     },
     "English": {
         # Global
-        "title": "AutoAD Suite v2.0",
+        "title": "AutoAD Suite v2.1",
         "add_videos": "➕ Add Videos",
         "clear_list": "Clear List",
         "output_folder": "📂 Output Folder",
@@ -297,7 +297,7 @@ translations = {
         
         # Audio Tools
         "start_audio": "▶ Process Audio",
-        "aud_normalize": "Normalize Volume (-23 LUFS)",
+        "aud_normalize": "Normalize Peak (dB):",
         "aud_silence": "Remove Silence",
         "aud_extract": "Extract as MP3 (Audio Only)",
         "aud_boost": "Volume Boost (dB):",
