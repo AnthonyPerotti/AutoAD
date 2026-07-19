@@ -23,6 +23,7 @@ class TranscriberView(ctk.CTkFrame):
         super().__init__(parent, fg_color="transparent")
         self.hub = hub
         self.input_dir = ""
+        self.output_dir = ""
         self.transcriber = WhisperTranscriber()
         self.lang = {}
 
@@ -45,15 +46,27 @@ class TranscriberView(ctk.CTkFrame):
         self.lbl_input_desc = ctk.CTkLabel(self.input_panel, text="Select the folder containing video or audio files.", font=FONTS["text_small"], text_color=COLORS["text_muted"], wraplength=260)
         self.lbl_input_desc.pack(anchor="w", padx=20, pady=(0, 10))
 
+        self.lbl_input_scope, self.opt_input_scope = self._add_option_row(self.input_panel, "Input Scope:", ["Single File", "Folder (No subfolders)", "Folder (With subfolders)"], "Folder (No subfolders)")
+
         self.btn_select_dir = ctk.CTkButton(
             self.input_panel, text="Select Folder", font=FONTS["button_normal"],
             fg_color=COLORS["hook"], hover_color=COLORS["export_btn_hover"], text_color=COLORS["text_main"],
             command=self.select_input_dir
         )
-        self.btn_select_dir.pack(padx=20, pady=(0, 10), fill="x")
+        self.btn_select_dir.pack(padx=20, pady=(10, 5), fill="x")
 
         self.lbl_dir = ctk.CTkLabel(self.input_panel, text="No folder selected", font=FONTS["text_small"], text_color=COLORS["text_muted"], wraplength=270, anchor="w")
         self.lbl_dir.pack(anchor="w", padx=20, pady=(0, 15))
+
+        self.lbl_output_folder = ctk.CTkLabel(self.input_panel, text="Destination:", font=FONTS["text_normal"])
+        self.lbl_output_folder.pack(anchor="w", padx=20, pady=(0, 5))
+
+        self.btn_select_out_dir = ctk.CTkButton(
+            self.input_panel, text="Same as input file(s)", font=FONTS["button_normal"],
+            fg_color="transparent", border_width=1, border_color=COLORS["border"], hover_color=COLORS["bg_hover"], text_color=COLORS["text_main"],
+            command=self.select_output_dir
+        )
+        self.btn_select_out_dir.pack(padx=20, pady=(0, 15), fill="x")
 
         # Settings Panel
         self.settings_panel = ctk.CTkFrame(self.left_col, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
@@ -66,6 +79,7 @@ class TranscriberView(ctk.CTkFrame):
         self.lbl_lang,  self.opt_lang  = self._add_option_row(self.settings_panel, "Language:", ["Portuguese", "English", "Spanish", "Auto-detect"], "Portuguese")
         self.lbl_device, self.opt_device = self._add_option_row(self.settings_panel, "Device:", DEVICE_OPTIONS, "Auto", callback=self._on_device_change)
         self.lbl_compute, self.opt_compute = self._add_option_row(self.settings_panel, "Compute Type:", COMPUTE_OPTIONS, "Auto")
+        self.lbl_output_mode, self.opt_output_mode = self._add_option_row(self.settings_panel, "Output Mode:", ["Grouped Single File", "Separate TXT Files"], "Grouped Single File")
 
         self.lbl_model_hint = ctk.CTkLabel(self.settings_panel, text="'large-v3' gives the highest accuracy.\nSmaller models are faster but less precise.", font=(FONTS["text_small"][0], 10), text_color=COLORS["text_muted"], justify="left", wraplength=260)
         self.lbl_model_hint.pack(anchor="w", padx=20, pady=(0, 15))
@@ -130,12 +144,8 @@ class TranscriberView(ctk.CTkFrame):
 
     def _get_hw_display(self):
         device, compute, desc = detect_device_and_compute("auto", "auto")
-        if "cuda_fallback" in desc:
-            name = desc.replace("cuda_fallback:", "")
-            return f"✔ CUDA (float32) — {name} [Maxwell]", COLORS["body"]
-        elif "cuda" in desc:
-            name = desc.replace("cuda:", "")
-            return f"✔ CUDA (int8_float16) — {name}", COLORS["success"]
+        if "cuda" in desc.lower():
+            return f"✔ {desc.capitalize()}", COLORS["success"]
         return "⚡ CPU — int8", COLORS["text_muted"]
 
     def _on_device_change(self, value):
@@ -156,10 +166,21 @@ class TranscriberView(ctk.CTkFrame):
         self.lbl_progress.configure(text=f"{int(value * 100)}%")
 
     def select_input_dir(self):
-        folder = filedialog.askdirectory(title=self.lang.get("transcriber_select_folder", "Select Input Folder"))
+        scope_str = self.opt_input_scope.get()
+        if "Single" in scope_str or "Arquivo" in scope_str:
+            path = filedialog.askopenfilename(title="Select File", filetypes=[("Media", "*.mp4 *.mp3 *.wav *.flac *.m4a")])
+        else:
+            path = filedialog.askdirectory(title=self.lang.get("transcriber_select_folder", "Select Folder"))
+        
+        if path:
+            self.input_dir = path
+            self.lbl_dir.configure(text=path)
+
+    def select_output_dir(self):
+        folder = filedialog.askdirectory(title=self.lang.get("transcriber_output_folder_label", "Select Output Folder"))
         if folder:
-            self.input_dir = folder
-            self.lbl_dir.configure(text=folder)
+            self.output_dir = folder
+            self.btn_select_out_dir.configure(text=folder)
 
     def toggle_run(self):
         if self.transcriber.is_running:
@@ -168,33 +189,96 @@ class TranscriberView(ctk.CTkFrame):
             return
 
         if not self.input_dir:
-            messagebox.showwarning("Warning", self.lang.get("transcriber_warn_no_folder", "Please select an input folder first."))
+            messagebox.showwarning("Warning", self.lang.get("transcriber_warn_no_folder", "Please select an input first."))
             return
 
-        lang_display = self.opt_lang._variable.get()
+        lang_display = self.opt_lang.get()
         language = _LANG_CODE_MAP.get(lang_display, "pt")
-        model_size = self.opt_model._variable.get()
-        device_pref = self.opt_device._variable.get().lower()
-        compute_pref = self.opt_compute._variable.get().lower()
+        model_size = self.opt_model.get()
+        device_pref = self.opt_device.get().lower()
+        compute_pref = self.opt_compute.get().lower()
+        
+        scope_str = self.opt_input_scope.get()
+        if "Single" in scope_str or "Arquivo" in scope_str:
+            input_scope = "single"
+        elif "Recursive" in scope_str or "subpastas" in scope_str.lower():
+            input_scope = "recursive"
+        else:
+            input_scope = "folder"
+            
+        mode_str = self.opt_output_mode.get()
+        if "Separate" in mode_str or "Separados" in mode_str:
+            output_mode = "individual"
+        else:
+            output_mode = "grouped"
 
-        self.btn_run.configure(text=self.lang.get("transcriber_cancel", "⏹ Cancel"), fg_color=COLORS["stop_btn"], hover_color=COLORS["stop_btn_hover"])
-        self.progress_bar.set(0)
-        self.log_textbox.configure(state="normal")
-        self.log_textbox.delete("1.0", "end")
-        self.log_textbox.configure(state="disabled")
-        self.log(self.lang.get("transcriber_log_starting", "Starting batch transcription..."))
-        self.log(f"  Model: {model_size}  |  Language: {lang_display}  |  Device: {device_pref}\n")
+        def _start_batch(override_device=None):
+            final_device = override_device if override_device else device_pref
+            self.btn_run.configure(text=self.lang.get("transcriber_cancel", "⏹ Cancel"), fg_color=COLORS["stop_btn"], hover_color=COLORS["stop_btn_hover"])
+            self.progress_bar.set(0)
+            self.log_textbox.configure(state="normal")
+            self.log_textbox.delete("1.0", "end")
+            self.log_textbox.configure(state="disabled")
+            self.log(self.lang.get("transcriber_log_starting", "Starting transcription..."))
+            self.log(f"  Model: {model_size}  |  Language: {lang_display}  |  Device: {final_device}\n")
 
-        self.transcriber.process_batch(
-            input_dir=self.input_dir,
-            model_size=model_size,
-            language=language,
-            device_pref=device_pref,
-            compute_pref=compute_pref,
-            log_callback=self._safe_log,
-            progress_callback=self._safe_progress,
-            finish_callback=self._on_finish,
-        )
+            self.transcriber.process_batch(
+                input_path=self.input_dir,
+                model_size=model_size,
+                language=language,
+                device_pref=final_device,
+                compute_pref=compute_pref,
+                input_scope=input_scope,
+                output_mode=output_mode,
+                output_dir=self.output_dir,
+                log_callback=self._safe_log,
+                progress_callback=self._safe_progress,
+                finish_callback=self._on_finish,
+            )
+
+        import ctranslate2
+        from core.downloader import check_cuda_dlls_exist, download_cuda_dependencies, inject_cuda_paths
+        
+        needs_cuda = device_pref == "cuda" or (device_pref == "auto" and ctranslate2.get_cuda_device_count() > 0)
+        
+        if needs_cuda and not check_cuda_dlls_exist():
+            ans = messagebox.askyesno("NVIDIA CUDA", 
+                self.lang.get("transcriber_dl_prompt", "Os pacotes da NVIDIA CUDA não foram encontrados.\n\nDeseja baixar as bibliotecas (~500MB) para habilitar a Placa de Vídeo?\n(Se clicar em Não, a CPU será usada)."))
+            if ans:
+                self.btn_run.configure(state="disabled")
+                self.progress_bar.set(0)
+                self.log_textbox.configure(state="normal")
+                self.log_textbox.delete("1.0", "end")
+                self.log(self.lang.get("transcriber_log_starting", "Starting download of CUDA libraries (this may take a while)...\n"))
+                self.log_textbox.configure(state="disabled")
+
+                def _dl_prog(pct, msg):
+                    self._safe_progress(pct)
+                    # We don't log every chunk to avoid freezing, only if it's a new file
+                    # Or we just let downloader.py call log_callback
+                    
+                def _run_dl():
+                    success = download_cuda_dependencies(_dl_prog, self._safe_log)
+                    if success:
+                        self._safe_log("\nDownload complete! Starting transcription...\n")
+                        inject_cuda_paths()
+                        self.after(0, lambda: _start_batch())
+                    else:
+                        self._safe_log("\nDownload failed! Falling back to CPU...\n")
+                        self.after(0, lambda: self.opt_device.set("CPU"))
+                        self.after(0, lambda: _start_batch("cpu"))
+
+                import threading
+                threading.Thread(target=_run_dl, daemon=True).start()
+                return
+            else:
+                self.opt_device.set("CPU")
+                _start_batch("cpu")
+                return
+
+        # If already exists or not using CUDA
+        inject_cuda_paths()
+        _start_batch()
 
     def _safe_log(self, msg):
         self.after(0, lambda: self.log(msg))
@@ -230,13 +314,39 @@ class TranscriberView(ctk.CTkFrame):
         self.lbl_input_title.configure(text=lang.get("transcriber_input_title", "📂 Input Folder"))
         self.lbl_input_desc.configure(text=lang.get("transcriber_input_desc", "Select the folder containing video or audio files."))
         self.btn_select_dir.configure(text=lang.get("transcriber_select_folder", "Select Folder"))
+        
         if not self.input_dir:
             self.lbl_dir.configure(text=lang.get("transcriber_no_folder", "No folder selected"))
+            
+        self.lbl_output_folder.configure(text=lang.get("transcriber_output_folder_label", "Destination:"))
+        if not self.output_dir:
+            self.btn_select_out_dir.configure(text=lang.get("transcriber_output_same_as_input", "Same as input file(s)"))
+            
         self.lbl_settings_title.configure(text=lang.get("transcriber_settings_title", "⚙ Settings"))
         self.lbl_model.configure(text=lang.get("transcriber_model_label", "Model:"))
         self.lbl_lang.configure(text=lang.get("transcriber_lang_label", "Language:"))
         self.lbl_device.configure(text=lang.get("transcriber_device_label", "Device:"))
         self.lbl_compute.configure(text=lang.get("transcriber_compute_label", "Compute Type:"))
+        
+        self.lbl_input_scope.configure(text=lang.get("transcriber_input_scope_label", "Input Scope:"))
+        opts_scope = [
+            lang.get("transcriber_scope_single", "Single File"),
+            lang.get("transcriber_scope_folder", "Folder (No subfolders)"),
+            lang.get("transcriber_scope_recursive", "Folder (With subfolders)")
+        ]
+        self.opt_input_scope.configure(values=opts_scope)
+        if self.opt_input_scope.get() not in opts_scope:
+            self.opt_input_scope.set(opts_scope[1])
+            
+        self.lbl_output_mode.configure(text=lang.get("transcriber_output_mode_label", "Output Mode:"))
+        opts_mode = [
+            lang.get("transcriber_mode_grouped", "Grouped Single File"),
+            lang.get("transcriber_mode_individual", "Separate TXT Files")
+        ]
+        self.opt_output_mode.configure(values=opts_mode)
+        if self.opt_output_mode.get() not in opts_mode:
+            self.opt_output_mode.set(opts_mode[0])
+
         self.lbl_model_hint.configure(text=lang.get("transcriber_model_hint", "'large-v3' gives the highest accuracy.\nSmaller models are faster but less precise."))
         self.lbl_hw_title.configure(text=lang.get("transcriber_hw_title", "🖥 Detected Hardware"))
         self.lbl_log_title.configure(text=lang.get("transcriber_log_title", "📋 Activity Log"))

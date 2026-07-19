@@ -1,5 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import glob
+import os
 
 a = Analysis(
     ['app.py'],

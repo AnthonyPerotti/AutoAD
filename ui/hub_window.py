@@ -6,6 +6,7 @@ from tkinter import messagebox
 from core.config import salvar_config, carregar_config
 from core.theme import COLORS, FONTS, SIZES
 from core.utils import get_resource_path
+from core.version import APP_VERSION, APP_FULL_NAME
 
 from apps.assembler.ui.view import AssemblerView
 from apps.resizer.ui.view import ResizerView
@@ -114,7 +115,7 @@ class AutoADSuiteApp(ctk.CTk):
         self.ui_scale_var = ctk.StringVar(value="100%")
         self.overwrite_var = ctk.StringVar(value="Ask")
 
-        self.title("AutoAD Suite v2.1")
+        self.title(APP_FULL_NAME)
         self.geometry("980x950")
         self.minsize(900, 800)
 
@@ -170,7 +171,7 @@ class AutoADSuiteApp(ctk.CTk):
         self.logo_title = ctk.CTkLabel(self.logo_text_container, text="AutoAD Suite", font=("Segoe UI", 14, "bold"), text_color=COLORS["text_main"], anchor="w")
         self.logo_title.pack(anchor="w")
 
-        self.logo_version = ctk.CTkLabel(self.logo_text_container, text="v2.0", font=("Segoe UI", 11), text_color=COLORS["text_muted"], anchor="w")
+        self.logo_version = ctk.CTkLabel(self.logo_text_container, text=f"v{APP_VERSION}", font=("Segoe UI", 11), text_color=COLORS["text_muted"], anchor="w")
         self.logo_version.pack(anchor="w")
 
         # Category: Dashboard Link
@@ -305,11 +306,11 @@ class AutoADSuiteApp(ctk.CTk):
         )
         self.title_label.pack(side="left")
 
-        # v2.0 badge
+        # version badge
         self.badge_frame = ctk.CTkFrame(self.title_row, fg_color=COLORS["hook"], corner_radius=6, height=20, width=40)
         self.badge_frame.pack(side="left", padx=(8, 0))
         self.badge_frame.pack_propagate(False)
-        self.badge_lbl = ctk.CTkLabel(self.badge_frame, text="v2.1", font=("Segoe UI", 10, "bold"), text_color=COLORS["text_main"])
+        self.badge_lbl = ctk.CTkLabel(self.badge_frame, text=f"v{APP_VERSION}", font=("Segoe UI", 10, "bold"), text_color=COLORS["text_main"])
         self.badge_lbl.place(relx=0.5, rely=0.5, anchor="center")
 
         self.subtitle_label = ctk.CTkLabel(
@@ -411,7 +412,7 @@ class AutoADSuiteApp(ctk.CTk):
 
         self.footer_version_label = ctk.CTkLabel(
             self.footer_frame,
-            text="AutoAD Suite v2.1",
+            text=APP_FULL_NAME,
             font=("Segoe UI", 10),
             text_color=COLORS["text_muted"]
         )

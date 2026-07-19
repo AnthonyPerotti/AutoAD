@@ -55,6 +55,12 @@ def show_completion_popup(parent, lang: dict, task_name: str, output_path: str):
     popup.title(title)
     popup.geometry("480x220")
     popup.resizable(False, False)
+    
+    import sys, os
+    icon_path = os.path.join(getattr(sys, '_MEIPASS', os.path.abspath('.')), 'assets', 'icon.ico')
+    if os.path.exists(icon_path):
+        popup.after(200, lambda: popup.iconbitmap(icon_path))
+        
     popup.grab_set()
     popup.lift()
     popup.focus_force()
