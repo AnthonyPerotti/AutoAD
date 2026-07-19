@@ -32,15 +32,6 @@ class AudioToolsManager:
         if extract_mp3:
             cmd.extend(["-vn", "-c:a", "libmp3lame", "-q:a", "2"])
         else:
-            # We are modifying audio, keep video intact
-            if "NVENC" in encoder:
-                cmd.extend(["-c:v", "h264_nvenc", "-preset", "p4"])
-            elif "AMF" in encoder:
-                cmd.extend(["-c:v", "h264_amf", "-quality", "balanced"])
-            elif "QSV" in encoder:
-                cmd.extend(["-c:v", "h264_qsv", "-preset", "medium"])
-            else:
-                cmd.extend(["-c:v", "libx264", "-preset", "fast"])
             cmd.extend(["-c:v", "copy"])
             cmd.extend(["-c:a", "aac", "-b:a", "192k"])
             

@@ -4,7 +4,7 @@ import glob
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from core.theme import COLORS, FONTS, SIZES
-from core.ui_utils import AutoScrollableFrame
+from core.ui_utils import AutoScrollableFrame, show_completion_popup
 from apps.converter.renderer import ConverterManager
 
 class ConverterView(ctk.CTkFrame):
@@ -75,11 +75,7 @@ class ConverterView(ctk.CTkFrame):
         self.btn_open_out_dir.pack(side="left", padx=(10, 0))
 
         self.lbl_out_dir = ctk.CTkLabel(self.output_panel, text="No folder selected", font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=300)
-        self.lbl_out_dir.pack(pady=(0, 10), padx=15, anchor="w")
-
-        self.var_open_folder = ctk.BooleanVar(value=True)
-        self.chk_open_folder = ctk.CTkCheckBox(self.output_panel, text="Abrir pasta ao finalizar", variable=self.var_open_folder, font=("Segoe UI", 11))
-        self.chk_open_folder.pack(anchor="w", padx=15, pady=(0, 15))
+        self.lbl_out_dir.pack(pady=(0, 15), padx=15, anchor="w")
 
         # ============================================
         # RIGHT COLUMN: Options
@@ -91,7 +87,7 @@ class ConverterView(ctk.CTkFrame):
         self.export_panel = ctk.CTkFrame(self.right_col, fg_color=COLORS["bg_panel"], corner_radius=SIZES["corner_panel"])
         self.export_panel.pack(fill="x", pady=(0, 10))
         
-        self.lbl_presets = ctk.CTkLabel(self.export_panel, text="Formatos de Saída:", font=("Segoe UI", 14, "bold"), text_color=COLORS["text_main"])
+        self.lbl_presets = ctk.CTkLabel(self.export_panel, text="Output Formats:", font=("Segoe UI", 14, "bold"), text_color=COLORS["text_main"])
         self.lbl_presets.pack(anchor="w", padx=20, pady=(15, 5))
 
         # Checkboxes for formats
@@ -108,7 +104,7 @@ class ConverterView(ctk.CTkFrame):
         ctk.CTkCheckBox(formats_row, text="YouTube", variable=self.var_youtube).pack(side="left", padx=5, pady=5)
 
         self.var_custom = ctk.BooleanVar(value=False)
-        self.chk_custom = ctk.CTkCheckBox(self.export_panel, text="Resolução Customizada", variable=self.var_custom, command=self.on_custom_toggle)
+        self.chk_custom = ctk.CTkCheckBox(self.export_panel, text="Custom Resolution", variable=self.var_custom, command=self.on_custom_toggle)
         self.chk_custom.pack(anchor="w", padx=20, pady=10)
 
         self.custom_frame = ctk.CTkFrame(self.export_panel, fg_color="transparent")
@@ -137,7 +133,7 @@ class ConverterView(ctk.CTkFrame):
         self.wm_panel.pack(fill="x", pady=(0, 10))
 
         self.var_wm_enabled = ctk.BooleanVar(value=False)
-        self.chk_wm_enabled = ctk.CTkCheckBox(self.wm_panel, text="Adicionar Marca D'água", font=("Segoe UI", 14, "bold"), variable=self.var_wm_enabled, command=self.on_wm_toggle)
+        self.chk_wm_enabled = ctk.CTkCheckBox(self.wm_panel, text="Add Watermark", font=("Segoe UI", 14, "bold"), variable=self.var_wm_enabled, command=self.on_wm_toggle)
         self.chk_wm_enabled.pack(anchor="w", padx=20, pady=(15, 10))
 
         self.wm_options_frame = ctk.CTkFrame(self.wm_panel, fg_color="transparent")
@@ -357,19 +353,16 @@ class ConverterView(ctk.CTkFrame):
             hover_color=COLORS["btn_action_hover"],
             state="normal"
         )
-        if stopped:
-            self.log(self.lang.get("operation_cancelled", "Operation cancelled."))
-        else:
+        if not stopped:
             self.log(self.lang.get("done", "Done!"))
             if errored:
                 self.log(self.lang.get("errors_found", "Errors in some tasks."))
-        
+            show_completion_popup(self, self.lang, "Video Converter", self.output_dir)
+        else:
+            self.log(self.lang.get("operation_cancelled", "Operation cancelled."))
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
-        
-        if not stopped and self.var_open_folder.get():
-            self.open_output_dir()
 
     def toggle_run(self):
         if self.converter_manager.is_running:
@@ -452,16 +445,12 @@ class ConverterView(ctk.CTkFrame):
         self.btn_clear_videos.configure(text=lang.get("clear_list", "Clear List"))
         self.btn_out_dir.configure(text=lang.get("output_folder", "📂 Output Folder"))
         self.btn_open_out_dir.configure(text=lang.get("open", "Open"))
-        
         if not self.output_dir:
             self.lbl_out_dir.configure(text=lang.get("no_folder_selected", "No folder selected"))
-            
         if not self.converter_manager.is_running:
-            self.btn_run.configure(text=lang.get("start_converter", "▶ Converter / Exportar"))
+            self.btn_run.configure(text=lang.get("start_converter", "▶ Convert / Export"))
         else:
             self.btn_run.configure(text=lang.get("cancel", "⏹ Cancel"))
-            
-        self.lbl_presets.configure(text=lang.get("exp_select", "Formatos de Saída:"))
-        self.chk_custom.configure(text=lang.get("exp_custom", "Resolução Customizada"))
-        self.chk_wm_enabled.configure(text=lang.get("wm_enable", "Adicionar Marca D'água"))
-        self.chk_open_folder.configure(text=lang.get("open_folder_done", "Abrir pasta ao finalizar"))
+        self.lbl_presets.configure(text=lang.get("exp_select", "Output Formats:"))
+        self.chk_custom.configure(text=lang.get("exp_custom", "Custom Resolution"))
+        self.chk_wm_enabled.configure(text=lang.get("wm_enable", "Add Watermark"))

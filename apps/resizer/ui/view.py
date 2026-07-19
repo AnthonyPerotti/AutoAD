@@ -4,7 +4,7 @@ import threading
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from core.theme import COLORS, FONTS, SIZES
-from core.ui_utils import AutoScrollableFrame
+from core.ui_utils import AutoScrollableFrame, show_completion_popup
 from apps.resizer.renderer import ResizerManager
 
 class ResizerView(ctk.CTkFrame):
@@ -35,7 +35,7 @@ class ResizerView(ctk.CTkFrame):
         self.input_panel.pack(fill="both", expand=True, pady=(0, 10))
 
         self.btn_add_videos = ctk.CTkButton(
-            self.input_panel, text="➕ Adicionar Vídeos", font=("Segoe UI", 13, "bold"),
+            self.input_panel, text="➕ Add Videos", font=("Segoe UI", 13, "bold"),
             fg_color=COLORS["hook"], hover_color=COLORS["export_btn_hover"], text_color=COLORS["text_main"],
             command=self.add_videos
         )
@@ -45,7 +45,7 @@ class ResizerView(ctk.CTkFrame):
         self.videos_list.pack(fill="both", expand=True, padx=15, pady=(0, 15))
 
         self.btn_clear_videos = ctk.CTkButton(
-            self.input_panel, text="Limpar Lista", font=("Segoe UI", 11),
+            self.input_panel, text="Clear List", font=("Segoe UI", 11),
             fg_color="transparent", hover_color=COLORS["bg_hover"], text_color=COLORS["text_light"],
             command=self.clear_videos
         )
@@ -59,26 +59,22 @@ class ResizerView(ctk.CTkFrame):
         btn_row.pack(pady=15, padx=15, fill="x")
 
         self.btn_out_dir = ctk.CTkButton(
-            btn_row, text="📂 Pasta de Saída", font=("Segoe UI", 13, "bold"),
+            btn_row, text="📂 Output Folder", font=("Segoe UI", 13, "bold"),
             fg_color=COLORS["export_btn"], hover_color=COLORS["export_btn_hover"], text_color=COLORS["text_main"],
             command=self.select_output_dir
         )
         self.btn_out_dir.pack(side="left", fill="x", expand=True)
 
         self.btn_open_out_dir = ctk.CTkButton(
-            btn_row, text="Abrir", font=("Segoe UI", 13, "bold"), width=60,
+            btn_row, text="Open", font=("Segoe UI", 13, "bold"), width=60,
             fg_color="transparent", hover_color=COLORS["bg_hover"], text_color=COLORS["text_main"],
             border_width=1, border_color=COLORS["border"],
             command=self.open_output_dir
         )
         self.btn_open_out_dir.pack(side="left", padx=(10, 0))
 
-        self.lbl_out_dir = ctk.CTkLabel(self.output_panel, text="Nenhuma pasta selecionada", font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=300)
-        self.lbl_out_dir.pack(pady=(0, 10), padx=15, anchor="w")
-
-        self.var_open_folder = ctk.BooleanVar(value=True)
-        self.chk_open_folder = ctk.CTkCheckBox(self.output_panel, text="Abrir pasta ao finalizar", variable=self.var_open_folder, font=("Segoe UI", 11))
-        self.chk_open_folder.pack(anchor="w", padx=15, pady=(0, 15))
+        self.lbl_out_dir = ctk.CTkLabel(self.output_panel, text="No folder selected", font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=300)
+        self.lbl_out_dir.pack(pady=(0, 15), padx=15, anchor="w")
 
 
         # ============================================
@@ -265,19 +261,17 @@ class ResizerView(ctk.CTkFrame):
             hover_color=COLORS["btn_action_hover"],
             state="normal"
         )
-        if stopped:
-            self.log(self.lang.get("operation_cancelled", "Operação cancelada."))
-        else:
+        if not stopped:
             success = len(self.input_videos) - len(errored)
-            self.log(self.lang.get("done", "Concluído! {} vídeos processados.").format(success))
+            self.log(self.lang.get("done", "Done! {} videos processed.").format(success))
             if errored:
-                self.log(self.lang.get("errors_found", "Erros em {} vídeos.").format(len(errored)))
+                self.log(self.lang.get("errors_found", "Errors in {} videos.").format(len(errored)))
+            show_completion_popup(self, self.lang, "Video Resizer", self.output_dir)
+        else:
+            self.log(self.lang.get("operation_cancelled", "Operation cancelled."))
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
-        
-        if not stopped and self.var_open_folder.get():
-            self.open_output_dir()
 
     def toggle_run(self):
         if self.resizer_manager.is_running:
@@ -323,38 +317,30 @@ class ResizerView(ctk.CTkFrame):
             if v == self.var_preset.get() and k.startswith("val_preset_"): preset_key = k
             if v == self.var_mode.get() and k.startswith("val_mode_"): mode_key = k
             
-        self.btn_add_videos.configure(text=lang.get("add_videos", "➕ Adicionar Vídeos"))
-        self.btn_clear_videos.configure(text=lang.get("clear_list", "Limpar Lista"))
-        self.btn_out_dir.configure(text=lang.get("output_folder", "📂 Pasta de Saída"))
-        self.btn_open_out_dir.configure(text=lang.get("open", "Abrir"))
+        self.btn_add_videos.configure(text=lang.get("add_videos", "➕ Add Videos"))
+        self.btn_clear_videos.configure(text=lang.get("clear_list", "Clear List"))
+        self.btn_out_dir.configure(text=lang.get("output_folder", "📂 Output Folder"))
+        self.btn_open_out_dir.configure(text=lang.get("open", "Open"))
         if not self.output_dir:
-            self.lbl_out_dir.configure(text=lang.get("no_folder_selected", "Nenhuma pasta selecionada"))
-            
+            self.lbl_out_dir.configure(text=lang.get("no_folder_selected", "No folder selected"))
         if not self.resizer_manager.is_running:
-            self.btn_run.configure(text=lang.get("start_resizer", "▶ Iniciar"))
+            self.btn_run.configure(text=lang.get("start_resizer", "▶ Start Resizing"))
         else:
-            self.btn_run.configure(text=lang.get("cancel", "⏹ Cancelar"))
-            
-        self.lbl_preset.configure(text=lang.get("resizer_preset", "Proporção:"))
-        self.lbl_res.configure(text=lang.get("resizer_res", "Resolução:"))
-        self.lbl_mode.configure(text=lang.get("resizer_mode", "Modo:"))
-        
+            self.btn_run.configure(text=lang.get("cancel", "⏹ Cancel"))
+        self.lbl_preset.configure(text=lang.get("resizer_preset", "Aspect Ratio:"))
+        self.lbl_res.configure(text=lang.get("resizer_res", "Resolution:"))
+        self.lbl_mode.configure(text=lang.get("resizer_mode", "Mode:"))
         if mode_key == "val_mode_blur":
             self.lbl_submode.configure(text=lang.get("resizer_blur", "Blur (0-100):"))
         elif mode_key == "val_mode_color":
-            self.lbl_submode.configure(text=lang.get("resizer_color", "Cor HEX:"))
-            
+            self.lbl_submode.configure(text=lang.get("resizer_color", "HEX Color:"))
         self.menu_preset.configure(values=[
-            lang.get("val_preset_916"), lang.get("val_preset_169"), 
+            lang.get("val_preset_916"), lang.get("val_preset_169"),
             lang.get("val_preset_11"), lang.get("val_preset_45"), lang.get("val_preset_custom")
         ])
-        
         self.menu_mode.configure(values=[
             lang.get("val_mode_blur"), lang.get("val_mode_color"),
             lang.get("val_mode_crop"), lang.get("val_mode_stretch")
         ])
-        
-        # Restore selections to new language strings
         self.var_preset.set(lang.get(preset_key, lang.get("val_preset_916")))
         self.var_mode.set(lang.get(mode_key, lang.get("val_mode_blur")))
-        self.chk_open_folder.configure(text=lang.get("open_folder_done", "Abrir pasta ao finalizar"))

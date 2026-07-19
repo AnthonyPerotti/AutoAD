@@ -1,7 +1,8 @@
+from core.version import APP_FULL_NAME
+
 translations = {
     "Português": {
-        # Global
-        "title": "AutoAD Suite v2.1",
+        "title": APP_FULL_NAME,
         "add_videos": "➕ Adicionar Vídeos",
         "clear_list": "Limpar Lista",
         "output_folder": "📂 Pasta de Saída",
@@ -152,10 +153,39 @@ translations = {
         "start_exporter": "▶ Exportar para Redes Sociais",
         "exp_select": "Selecione as plataformas para exportar:",
         "exp_no_preset": "Selecione pelo menos uma plataforma.",
+
+        # Completion Popup
+        "popup_done_title": "Tarefa Concluída",
+        "popup_done_body": "{task} finalizado com sucesso.\nSaída salva em:",
+        "popup_open_folder": "Abrir Pasta",
+        "popup_close": "Fechar",
+
+        # Batch Transcriber
+        "transcriber_input_title": "📂 Pasta de Entrada",
+        "transcriber_input_desc": "Selecione a pasta com os arquivos de vídeo ou áudio.",
+        "transcriber_select_folder": "Selecionar Pasta",
+        "transcriber_no_folder": "Nenhuma pasta selecionada",
+        "transcriber_settings_title": "⚙ Configurações",
+        "transcriber_model_label": "Modelo:",
+        "transcriber_lang_label": "Idioma:",
+        "transcriber_device_label": "Dispositivo:",
+        "transcriber_compute_label": "Compute Type:",
+        "transcriber_model_hint": "'large-v3' oferece maior precisão.\nModelos menores são mais rápidos.",
+        "transcriber_hw_title": "🖥 Hardware Detectado",
+        "transcriber_hw_cpu": "CPU — int8 (CPU mode)",
+        "transcriber_hw_cuda": "CUDA — {name}",
+        "transcriber_hw_cuda_fallback": "CUDA (float32) — {name} [Maxwell]",
+        "transcriber_log_title": "📋 Log de Atividade",
+        "transcriber_log_init": "Aguardando pasta de entrada...\n",
+        "transcriber_output_hint": "Saída: transcricoes_agrupadas.txt na pasta de entrada",
+        "transcriber_start": "▶ Iniciar Transcrição",
+        "transcriber_cancel": "⏹ Cancelar",
+        "transcriber_warn_no_folder": "Selecione uma pasta de entrada primeiro.",
+        "transcriber_log_starting": "Iniciando transcrição em lote...",
+        "transcriber_lang_options": "Português,English,Español,Auto-detect",
     },
     "English": {
-        # Global
-        "title": "AutoAD Suite v2.1",
+        "title": APP_FULL_NAME,
         "add_videos": "➕ Add Videos",
         "clear_list": "Clear List",
         "output_folder": "📂 Output Folder",
@@ -306,5 +336,35 @@ translations = {
         "start_exporter": "▶ Export to Socials",
         "exp_select": "Select Platforms to Export:",
         "exp_no_preset": "Select at least one platform.",
+
+        # Completion Popup
+        "popup_done_title": "Task Complete",
+        "popup_done_body": "{task} finished successfully.\nOutput saved to:",
+        "popup_open_folder": "Open Folder",
+        "popup_close": "Close",
+
+        # Batch Transcriber
+        "transcriber_input_title": "📂 Input Folder",
+        "transcriber_input_desc": "Select the folder containing video or audio files.",
+        "transcriber_select_folder": "Select Folder",
+        "transcriber_no_folder": "No folder selected",
+        "transcriber_settings_title": "⚙ Settings",
+        "transcriber_model_label": "Model:",
+        "transcriber_lang_label": "Language:",
+        "transcriber_device_label": "Device:",
+        "transcriber_compute_label": "Compute Type:",
+        "transcriber_model_hint": "'large-v3' gives the highest accuracy.\nSmaller models are faster but less precise.",
+        "transcriber_hw_title": "🖥 Detected Hardware",
+        "transcriber_hw_cpu": "CPU — int8 (CPU mode)",
+        "transcriber_hw_cuda": "CUDA — {name}",
+        "transcriber_hw_cuda_fallback": "CUDA (float32) — {name} [Maxwell]",
+        "transcriber_log_title": "📋 Activity Log",
+        "transcriber_log_init": "Waiting for input folder...\n",
+        "transcriber_output_hint": "Output: transcricoes_agrupadas.txt in the input folder",
+        "transcriber_start": "▶ Start Transcription",
+        "transcriber_cancel": "⏹ Cancel",
+        "transcriber_warn_no_folder": "Please select an input folder first.",
+        "transcriber_log_starting": "Starting batch transcription...",
+        "transcriber_lang_options": "Portuguese,English,Spanish,Auto-detect",
     }
 }

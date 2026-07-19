@@ -13,6 +13,14 @@ class SettingsWindow(ctk.CTkToplevel):
         self.minsize(700, 500)
         self.grab_set()
 
+        try:
+            import os
+            from core.utils import get_resource_path
+            icon_path = get_resource_path(os.path.join("assets", "icon.ico"))
+            self.after(200, lambda: self.iconbitmap(icon_path))
+        except Exception:
+            pass
+
         # Main Layout: 2 Columns
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -104,14 +112,30 @@ class SettingsWindow(ctk.CTkToplevel):
         ctk.CTkLabel(self.frames["rendering"], text="Rendering Settings", font=("Segoe UI", 22, "bold")).pack(anchor="w", pady=(0, 20))
         
         ctk.CTkLabel(self.frames["rendering"], text="Render Encoder", font=("Segoe UI", 14)).pack(anchor="w")
+        enc_row = ctk.CTkFrame(self.frames["rendering"], fg_color="transparent")
+        enc_row.pack(anchor="w", pady=(5, 10))
         self.enc_menu = ctk.CTkOptionMenu(
-            self.frames["rendering"],
+            enc_row,
             values=["CPU (libx264)", "NVIDIA (NVENC)", "AMD (AMF)", "Intel (QSV)"],
             variable=self.hub.encoder_var,
-            width=250,
+            width=220,
             command=self.save_all
         )
-        self.enc_menu.pack(anchor="w", pady=(5, 20))
+        self.enc_menu.pack(side="left")
+        ctk.CTkButton(
+            enc_row, text="⚡ Auto-detect", width=110,
+            fg_color="transparent", border_width=1, border_color=COLORS["border"],
+            hover_color=COLORS["bg_hover"], text_color=COLORS["text_main"],
+            font=("Segoe UI", 12),
+            command=self.auto_detect_encoder
+        ).pack(side="left", padx=(10, 0))
+
+        self.lbl_enc_hint = ctk.CTkLabel(
+            self.frames["rendering"],
+            text="Auto-detect scans your system for the best available GPU encoder.",
+            font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=400, justify="left"
+        )
+        self.lbl_enc_hint.pack(anchor="w", pady=(0, 20))
 
 
 
@@ -120,48 +144,61 @@ class SettingsWindow(ctk.CTkToplevel):
         self.frames["about"] = ctk.CTkFrame(self.content_frame, fg_color="transparent")
         ctk.CTkLabel(self.frames["about"], text="About AutoAD Suite", font=("Segoe UI", 22, "bold")).pack(anchor="w", pady=(0, 20))
 
-        # System Info Card
         info_card = ctk.CTkFrame(self.frames["about"], fg_color=COLORS["bg_panel"], corner_radius=8, border_width=1, border_color=COLORS["border"])
         info_card.pack(fill="x", pady=(0, 20))
-        
+
         def add_info_row(parent, label, value):
             row = ctk.CTkFrame(parent, fg_color="transparent")
             row.pack(fill="x", padx=15, pady=8)
             ctk.CTkLabel(row, text=label, font=("Segoe UI", 12, "bold"), text_color=COLORS["text_muted"]).pack(side="left")
             ctk.CTkLabel(row, text=value, font=("Segoe UI", 12), text_color=COLORS["text_main"]).pack(side="right")
 
-        add_info_row(info_card, "Version", "AutoAD Suite v2.0")
-        add_info_row(info_card, "Python Version", sys.version.split()[0])
-        add_info_row(info_card, "FFmpeg Version", self.get_ffmpeg_version())
-        add_info_row(info_card, "Support Email", "contato@autoad.suite")
+        def get_pkg_version(pkg):
+            try:
+                import importlib
+                mod = importlib.import_module(pkg)
+                return getattr(mod, "__version__", "n/a")
+            except Exception:
+                return "n/a"
 
-        # Links
-        ctk.CTkLabel(self.frames["about"], text="Links", font=("Segoe UI", 14, "bold")).pack(anchor="w", pady=(10, 10))
-        
+        from core.version import APP_FULL_NAME
+        add_info_row(info_card, "Version", APP_FULL_NAME)
+        add_info_row(info_card, "Python Version", sys.version.split()[0])
+        add_info_row(info_card, "FFmpeg", self.get_ffmpeg_version())
+        add_info_row(info_card, "faster-whisper", get_pkg_version("faster_whisper"))
+        add_info_row(info_card, "customtkinter", get_pkg_version("customtkinter"))
+        add_info_row(info_card, "ctranslate2", get_pkg_version("ctranslate2"))
+
+        ctk.CTkLabel(self.frames["about"], text="Links & Contact", font=("Segoe UI", 14, "bold")).pack(anchor="w", pady=(10, 10))
+
         links_frame = ctk.CTkFrame(self.frames["about"], fg_color="transparent")
         links_frame.pack(fill="x")
-        
-        for name, url in [("GitHub", "https://github.com/AnthonyPerotti/AutoAD"), ("Discord", "https://discord.com"), ("Documentation", "https://github.com/AnthonyPerotti/AutoAD")]:
-            btn = ctk.CTkButton(
-                links_frame, text=name, width=100, fg_color="transparent", border_width=1, border_color=COLORS["border"],
-                hover_color=COLORS["bg_hover"], text_color=COLORS["text_main"],
-                command=lambda u=url: webbrowser.open(u)
-            )
-            btn.pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            links_frame, text="GitHub", width=100, fg_color="transparent", border_width=1, border_color=COLORS["border"],
+            hover_color=COLORS["bg_hover"], text_color=COLORS["text_main"],
+            command=lambda: webbrowser.open("https://github.com/AnthonyPerotti/AutoAD")
+        ).pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            links_frame, text="Documentation", width=120, fg_color="transparent", border_width=1, border_color=COLORS["border"],
+            hover_color=COLORS["bg_hover"], text_color=COLORS["text_main"],
+            command=lambda: webbrowser.open("https://github.com/AnthonyPerotti/AutoAD")
+        ).pack(side="left", padx=(0, 10))
+
+        discord_row = ctk.CTkFrame(self.frames["about"], fg_color="transparent")
+        discord_row.pack(anchor="w", pady=(15, 0))
+        ctk.CTkLabel(discord_row, text="Discord:", font=("Segoe UI", 12, "bold"), text_color=COLORS["text_muted"]).pack(side="left")
+        ctk.CTkLabel(discord_row, text="@spisham", font=("Segoe UI", 12), text_color=COLORS["text_main"]).pack(side="left", padx=(8, 0))
 
 
         # Set initial frame
         self.show_frame("general")
 
     def show_frame(self, key):
-        # Update buttons
         for k, btn in self.nav_buttons.items():
-            if k == key:
-                btn.configure(fg_color=COLORS["hook"], text_color=COLORS["text_main"])
-            else:
-                btn.configure(fg_color="transparent", text_color=COLORS["text_light"])
-                
-        # Update frames
+            btn.configure(fg_color=COLORS["hook"] if k == key else "transparent",
+                          text_color=COLORS["text_main"] if k == key else COLORS["text_light"])
         for k, frame in self.frames.items():
             frame.pack_forget()
         self.frames[key].pack(fill="both", expand=True)
@@ -180,13 +217,23 @@ class SettingsWindow(ctk.CTkToplevel):
 
     def save_all(self, _=None):
         self.hub.salvar_configuracoes()
-        
+
+    def auto_detect_encoder(self):
+        from core.utils import detect_best_encoder
+        best = detect_best_encoder()
+        self.hub.encoder_var.set(best)
+        self.lbl_enc_hint.configure(
+            text=f"Detected: {best}  —  Auto-detect scans your system for the best available GPU encoder.",
+            text_color=COLORS["success"]
+        )
+        self.save_all()
+
     def get_ffmpeg_version(self):
         try:
-            result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
-            # The first line usually looks like "ffmpeg version 7.0.1-essentials_build-www.gyan.dev"
+            from core.ffmpeg import FFMPEG_PATH
+            result = subprocess.run([FFMPEG_PATH, "-version"], capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
             first_line = result.stdout.split('\n')[0]
-            version_str = first_line.replace("ffmpeg version ", "").split(" ")[0]
-            return version_str
+            return first_line.replace("ffmpeg version ", "").split(" ")[0]
         except Exception:
             return "Not found"
+

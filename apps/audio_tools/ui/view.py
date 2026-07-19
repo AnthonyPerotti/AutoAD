@@ -3,7 +3,7 @@ import os
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from core.theme import COLORS, FONTS, SIZES
-from core.ui_utils import AutoScrollableFrame
+from core.ui_utils import AutoScrollableFrame, show_completion_popup
 from apps.audio_tools.renderer import AudioToolsManager
 
 class AudioToolsView(ctk.CTkFrame):
@@ -72,11 +72,7 @@ class AudioToolsView(ctk.CTkFrame):
         self.btn_open_out_dir.pack(side="left", padx=(10, 0))
 
         self.lbl_out_dir = ctk.CTkLabel(self.output_panel, text="No folder selected", font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=300)
-        self.lbl_out_dir.pack(pady=(0, 10), padx=15, anchor="w")
-
-        self.var_open_folder = ctk.BooleanVar(value=True)
-        self.chk_open_folder = ctk.CTkCheckBox(self.output_panel, text="Open output folder when done", variable=self.var_open_folder, font=("Segoe UI", 11))
-        self.chk_open_folder.pack(anchor="w", padx=15, pady=(0, 15))
+        self.lbl_out_dir.pack(pady=(0, 15), padx=15, anchor="w")
 
         # ============================================
         # RIGHT COLUMN: Options & Log
@@ -196,20 +192,12 @@ class AudioToolsView(ctk.CTkFrame):
             hover_color=COLORS["btn_action_hover"],
             state="normal"
         )
-        if stopped:
-            self.log(self.lang.get("operation_cancelled", "Operation cancelled."))
-        else:
-            success = len(self.input_videos) - len(errored)
-            self.log(self.lang.get("done", "Done! {} videos processed.").format(success))
+        if not stopped:
+            success_count = len(self.input_videos) - len(errored)
+            self.log(self.lang.get("done", "Done! {} videos processed.").format(success_count))
             if errored:
                 self.log(self.lang.get("errors_found", "Errors in {} videos.").format(len(errored)))
-        
-        self.progress_bar.stop()
-        self.progress_bar.configure(mode="determinate")
-        self.progress_bar.set(0)
-        
-        if not stopped and self.var_open_folder.get():
-            self.open_output_dir()
+            show_completion_popup(self, self.lang, "Audio Toolkit", self.output_dir)
 
     def toggle_run(self):
         if self.audio_manager.is_running:
@@ -246,16 +234,12 @@ class AudioToolsView(ctk.CTkFrame):
         self.btn_clear_videos.configure(text=lang.get("clear_list", "Clear List"))
         self.btn_out_dir.configure(text=lang.get("output_folder", "📂 Output Folder"))
         self.btn_open_out_dir.configure(text=lang.get("open", "Open"))
-        
         if not self.output_dir:
             self.lbl_out_dir.configure(text=lang.get("no_folder_selected", "No folder selected"))
-            
         if not self.audio_manager.is_running:
             self.btn_run.configure(text=lang.get("start_audio", "▶ Process Audio"))
         else:
             self.btn_run.configure(text=lang.get("cancel", "⏹ Cancel"))
-            
         self.chk_normalize.configure(text=lang.get("aud_normalize", "Normalize Peak (dB):"))
         self.chk_silence.configure(text=lang.get("aud_silence", "Cut Silence"))
         self.chk_extract.configure(text=lang.get("aud_extract", "Extract as MP3 (Audio Only)"))
-        self.chk_open_folder.configure(text=lang.get("open_folder_done", "Open output folder when done"))

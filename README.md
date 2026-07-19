@@ -1,8 +1,8 @@
-# AutoAD Suite v2.1
+# AutoAD Suite v2.2
 
-Modern desktop application suite for automated batch video generation, conversions, and file management.
+Modern desktop application suite for automated batch video generation, conversions, transcriptions, and file management.
 
-AutoAD is a modular ecosystem containing powerful applications like the **Content Assembler** (dynamic video combinations of Hooks, Bodies and CTAs), **Video Converter** (batch resizer and watermarker), **Audio Toolkit** (peak normalization, extraction, silence cutting), and a **Bulk Renamer**, all managed within a single beautiful interface optimized for speed and workflow automation.
+AutoAD is a modular ecosystem containing powerful applications like the **Content Assembler** (dynamic video combinations of Hooks, Bodies and CTAs), **Video Converter** (batch resizer and watermarker), **Audio Toolkit** (peak normalization, extraction, silence cutting), **Batch Transcriber** (faster-whisper local audio/video transcribing), and a **Bulk Renamer**, all managed within a single beautiful interface optimized for speed and workflow automation.
 
 ---
 
@@ -28,6 +28,12 @@ AutoAD is a modular ecosystem containing powerful applications like the **Conten
 * Cut silence automatically
 * Batch extract videos to MP3
 
+### Batch Transcriber
+* Local speech-to-text batch transcription using `faster-whisper`
+* Dynamic 3-layer hardware detection (CUDA int8_float16, CUDA float32 fallback for older Maxwell GPUs, or CPU int8)
+* Manual device and compute type settings override
+* Aggregate outputs into a single `.txt` file to prevent token limit issues (e.g. NotebookLM)
+
 ### Bulk Renamer
 * Bulk rename files in any directory
 * Live preview of new filenames before applying
@@ -39,7 +45,7 @@ AutoAD is a modular ecosystem containing powerful applications like the **Conten
 * Multilingual support (English, Português)
 * Dynamic UI Scaling
 * Light and Dark Theme
-* Optional: Open Output Folder upon job completion
+* Unified completion popup notification (with Quick Open folder access)
 
 ---
 
@@ -60,6 +66,8 @@ AutoAD is a modular ecosystem containing powerful applications like the **Conten
 * FFmpeg (in `tools/` folder)
 * CustomTkinter
 * Pillow
+* torch (for CUDA capability detection)
+* faster-whisper (local transcription engine)
 
 ---
 
@@ -132,6 +140,8 @@ AutoAD/
 │   ├── config.py
 │   ├── theme.py
 │   ├── translations.py
+│   ├── ui_utils.py
+│   ├── version.py
 │   └── utils.py
 │
 ├── apps/
@@ -139,7 +149,8 @@ AutoAD/
 │   ├── renamer/       # Bulk Renamer App
 │   ├── converter/     # Video Converter App
 │   ├── audio_tools/   # Audio Toolkit App
-│   └── subtitles/     # Subtitles Tools App (WIP)
+│   ├── subtitles/     # Subtitles Tools App
+│   └── transcriber/   # Batch Transcriber App
 │
 ├── ui/
 │   └── hub_window.py  # Main navigation and router
@@ -159,3 +170,4 @@ MIT License
 ## Author
 
 Developed by Anthony Perotti
+

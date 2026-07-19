@@ -4,7 +4,7 @@ import glob
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from core.theme import COLORS, FONTS, SIZES
-from core.ui_utils import AutoScrollableFrame
+from core.ui_utils import AutoScrollableFrame, show_completion_popup
 from apps.subtitles.renderer import SubtitlesManager
 
 class SubtitlesView(ctk.CTkFrame):
@@ -74,11 +74,7 @@ class SubtitlesView(ctk.CTkFrame):
         self.btn_open_out_dir.pack(side="left", padx=(10, 0))
 
         self.lbl_out_dir = ctk.CTkLabel(self.output_panel, text="No folder selected", font=("Segoe UI", 11), text_color=COLORS["text_muted"], wraplength=300)
-        self.lbl_out_dir.pack(pady=(0, 10), padx=15, anchor="w")
-
-        self.var_open_folder = ctk.BooleanVar(value=True)
-        self.chk_open_folder = ctk.CTkCheckBox(self.output_panel, text="Abrir pasta ao finalizar", variable=self.var_open_folder, font=("Segoe UI", 11))
-        self.chk_open_folder.pack(anchor="w", padx=15, pady=(0, 15))
+        self.lbl_out_dir.pack(pady=(0, 15), padx=15, anchor="w")
 
         # ============================================
         # RIGHT COLUMN: Options & Log
@@ -247,20 +243,17 @@ class SubtitlesView(ctk.CTkFrame):
             hover_color=COLORS["btn_action_hover"],
             state="normal"
         )
-        if stopped:
-            self.log(self.lang.get("operation_cancelled", "Operation cancelled."))
-        else:
+        if not stopped:
             success = len(self.input_videos) - len(errored)
             self.log(self.lang.get("done", "Done! {} videos processed.").format(success))
             if errored:
                 self.log(self.lang.get("errors_found", "Errors in {} videos.").format(len(errored)))
-        
+            show_completion_popup(self, self.lang, "Subtitle Burner", self.output_dir)
+        else:
+            self.log(self.lang.get("operation_cancelled", "Operation cancelled."))
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
-        
-        if not stopped and self.var_open_folder.get():
-            self.open_output_dir()
 
     def toggle_run(self):
         if self.subtitles_manager.is_running:
@@ -304,24 +297,18 @@ class SubtitlesView(ctk.CTkFrame):
         self.btn_clear_videos.configure(text=lang.get("clear_list", "Clear List"))
         self.btn_out_dir.configure(text=lang.get("output_folder", "📂 Output Folder"))
         self.btn_open_out_dir.configure(text=lang.get("open", "Open"))
-        
         if not self.output_dir:
             self.lbl_out_dir.configure(text=lang.get("no_folder_selected", "No folder selected"))
-            
         if not self.subtitles_manager.is_running:
             self.btn_run.configure(text=lang.get("start_subtitles", "▶ Burn Subtitles"))
         else:
             self.btn_run.configure(text=lang.get("cancel", "⏹ Cancel"))
-            
         self.rb_manual.configure(text=lang.get("sub_manual", "Manual (.srt/.ass)"))
         self.rb_auto.configure(text=lang.get("sub_auto", "Auto AI (Whisper)"))
         self.btn_sel_sub.configure(text=lang.get("sub_select", "Select Subtitle File"))
-        
         if not self.subtitle_path:
             self.lbl_sub_path.configure(text=lang.get("sub_no_file", "No subtitle selected"))
-            
         self.lbl_font.configure(text=lang.get("sub_font", "Font:"))
         self.lbl_size.configure(text=lang.get("sub_size", "Size:"))
         self.lbl_color.configure(text=lang.get("sub_color", "Color:"))
         self.lbl_auto_dev.configure(text=lang.get("sub_auto_dev", "Feature in development.\nPlease use Manual mode for now."))
-        self.chk_open_folder.configure(text=lang.get("open_folder_done", "Abrir pasta ao finalizar"))

@@ -13,6 +13,7 @@ from apps.renamer.ui.view import RenamerView
 from apps.converter.ui.view import ConverterView
 from apps.audio_tools.ui.view import AudioToolsView
 from apps.subtitles.ui.view import SubtitlesView
+from apps.transcriber.ui.view import TranscriberView
 from ui.placeholder import PlaceholderModuleView
 
 ctk.set_appearance_mode("dark")
@@ -27,6 +28,7 @@ MODULES = [
     ("converter", "🔄", "Video Converter", "Video Converter", False),
     ("audio_tools", "🎵", "Audio Toolkit", "Audio Toolkit", False),
     ("renamer", "🏷", "Bulk Renamer", "Bulk Renamer", False),
+    ("transcriber", "🎙", "Transcrição em Lote", "Batch Transcriber", False),
 ]
 
 # Placeholder module config: key -> (icon, title, description, features)
@@ -366,6 +368,7 @@ class AutoADSuiteApp(ctk.CTk):
         from apps.subtitles.ui.view import SubtitlesView
         from apps.audio_tools.ui.view import AudioToolsView
         from apps.converter.ui.view import ConverterView
+        from apps.transcriber.ui.view import TranscriberView
 
         self.assembler_view = AssemblerView(self.view_container, self)
         self.assembler_view.pack(fill="both", expand=True)
@@ -387,6 +390,8 @@ class AutoADSuiteApp(ctk.CTk):
                 self.module_views[key] = AudioToolsView(self.view_container, self)
             elif key == "converter":
                 self.module_views[key] = ConverterView(self.view_container, self)
+            elif key == "transcriber":
+                self.module_views[key] = TranscriberView(self.view_container, self)
 
         # Dashboard
         self.dashboard_view = ctk.CTkFrame(self.view_container, fg_color="transparent")
